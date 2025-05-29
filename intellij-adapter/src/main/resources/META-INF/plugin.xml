@@ -1,0 +1,48 @@
+<idea-plugin>
+    <id>com.example.cross-platform-analyzer</id>
+    <name>Cross Platform Code Analyzer</name>
+    <vendor email="support@example.com" url="https://www.example.com">Example Company</vendor>
+    <version>0.1.0</version>
+    
+    <description><![CDATA[
+    <h2>Cross Platform Code Analyzer</h2>
+    <p>A cross-platform code analyzer that works in both VS Code and JetBrains IDEs</p>
+    <p>This plugin analyzes your code for potential issues and formatting problems using a shared Node.js-based core.</p>
+    
+    <h3>Features:</h3>
+    <ul>
+        <li>Analyze code files for issues and potential improvements</li>
+        <li>Identify console.log statements in production code</li>
+        <li>Find TODO comments that need addressing</li>
+        <li>Detect empty catch blocks and other code smells</li>
+        <li>Clean visualization of results with color-coded severities</li>
+    </ul>
+    ]]></description>
+    
+    <change-notes><![CDATA[
+    <h3>0.1.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>Basic code analysis functionality</li>
+        <li>Results displayed in a user-friendly dialog</li>
+    </ul>
+    ]]></change-notes>
+    
+    <idea-version since-build="211" until-build="231.*"/>
+    
+    <depends>com.intellij.modules.platform</depends>
+    
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add extensions here -->
+    </extensions>
+    
+    <actions>
+        <action id="com.example.CodeAnalyzerAction" 
+                class="com.example.CodeAnalyzerAction" 
+                text="Analyze Code" 
+                description="Analyze code using shared Node.js module">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <keyboard-shortcut first-keystroke="control alt A" keymap="$default"/>
+        </action>
+    </actions>
+</idea-plugin>

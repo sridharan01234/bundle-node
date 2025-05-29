@@ -1,0 +1,23 @@
+{
+  "name": "my-single-executable-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --prefix core",
+    "build:linux": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64 --output bin/cross-platform-tool-linux --config core/package.json",
+    "build:macos": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-macos-x64 --output bin/cross-platform-tool-macos --config core/package.json",
+    "build:win": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-win-x64 --output bin/cross-platform-tool-win.exe --config core/package.json",
+    "build:all": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64,node16-macos-x64,node16-win-x64 --output bin/cross-platform-tool --config core/package.json",
+    "clean": "npm run clean --prefix core && rm -rf bin/cross-platform-tool*"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.12",
+    "pkg": "^5.8.1",
+    "prettier": "3.5.3"
+  }
+}
