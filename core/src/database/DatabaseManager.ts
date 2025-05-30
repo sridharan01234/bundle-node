@@ -195,6 +195,23 @@ export class DatabaseManager {
   }
 
   /**
+   * Clear all items from the database
+   */
+  clearItems(db: SQLite3DatabaseInstance, callback: () => void): void {
+
+    console.log("Clearing all items from the database...");
+    db.run("DELETE FROM items", [], function (this: any, err: Error | null) {
+      if (err) {
+        console.error("Error clearing items:", err.message);
+      } else {
+        console.log(`Cleared ${this.changes} items from the database`);
+      }
+      callback();
+    });
+  }
+
+
+  /**
    * Show database information
    */
   showDatabaseInfo(db: SQLite3DatabaseInstance, callback: () => void): void {
