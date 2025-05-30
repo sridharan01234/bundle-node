@@ -18,7 +18,7 @@ export function getDatabaseHtml(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}' https:; style-src 'nonce-${nonce}';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}' https://code.jquery.com 'nonce-${nonce}'; style-src 'nonce-${nonce}';">
   <title>SQLite Database Manager</title>
   <style nonce="${nonce}">
     body {
@@ -187,6 +187,11 @@ export function getDatabaseHtml(
     </div>
   </div>
 
+  <!-- Add jQuery for easier DOM manipulation -->
+  <script nonce="${nonce}" src="https://code.jquery.com/jquery-3.7.1.min.js" 
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" 
+    crossorigin="anonymous"></script>
+
   <script nonce="${nonce}">
     // Add global error handler to prevent uncaught exceptions from breaking the WebView
     window.addEventListener('error', function(event) {
@@ -212,8 +217,8 @@ export function getDatabaseHtml(
       }
     })();
     
-    // Wait for DOM to be fully loaded
-    window.addEventListener('DOMContentLoaded', () => {
+    // Wait for DOM to be fully loaded using jQuery
+    $(document).ready(function() {
       try {
         // State variables
         let items = [];
@@ -221,44 +226,48 @@ export function getDatabaseHtml(
         let currentPromiseResolve = null;
         
         // DOM elements - will be set after render
-        let statusEl;
-        let itemNameInput;
-        let itemsList;
-        let loadingIndicator;
-        let emptyState;
-        let itemsTable;
+        let $status;
+        let $itemNameInput;
+        let $loadingIndicator;
+        let $emptyState;
+        let $itemsTable;
+        let $itemsList;
         
         // Custom modal dialogs
         function showConfirmDialog(message, title = 'Confirm') {
           return new Promise((resolve) => {
             currentPromiseResolve = resolve;
             
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = \`
-              <div class="modal-container">
-                <div class="modal-header">
-                  <h3 class="modal-title">\${escapeHtml(title)}</h3>
-                </div>
-                <div class="modal-body">
-                  \${escapeHtml(message)}
-                </div>
-                <div class="modal-footer">
-                  <button class="cancel-btn">Cancel</button>
-                  <button class="confirm-btn">Confirm</button>
-                </div>
-              </div>
-            \`;
+            const $modal = $('<div>')
+              .addClass('modal-overlay')
+              .append(
+                $('<div>')
+                  .addClass('modal-container')
+                  .append(
+                    $('<div>')
+                      .addClass('modal-header')
+                      .append($('<h3>').addClass('modal-title').text(title)),
+                    $('<div>')
+                      .addClass('modal-body')
+                      .text(message),
+                    $('<div>')
+                      .addClass('modal-footer')
+                      .append(
+                        $('<button>').addClass('cancel-btn').text('Cancel'),
+                        $('<button>').addClass('confirm-btn').text('Confirm')
+                      )
+                  )
+              );
             
-            document.body.appendChild(modal);
+            $('body').append($modal);
             
-            modal.querySelector('.confirm-btn').addEventListener('click', () => {
-              document.body.removeChild(modal);
+            $('.confirm-btn').on('click', function() {
+              $modal.remove();
               resolve(true);
             });
             
-            modal.querySelector('.cancel-btn').addEventListener('click', () => {
-              document.body.removeChild(modal);
+            $('.cancel-btn').on('click', function() {
+              $modal.remove();
               resolve(false);
             });
           });
@@ -268,48 +277,53 @@ export function getDatabaseHtml(
           return new Promise((resolve) => {
             currentPromiseResolve = resolve;
             
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = \`
-              <div class="modal-container">
-                <div class="modal-header">
-                  <h3 class="modal-title">\${escapeHtml(title)}</h3>
-                </div>
-                <div class="modal-body">
-                  \${escapeHtml(message)}
-                  <input type="text" class="modal-input" value="\${escapeHtml(defaultValue)}">
-                </div>
-                <div class="modal-footer">
-                  <button class="cancel-btn">Cancel</button>
-                  <button class="confirm-btn">OK</button>
-                </div>
-              </div>
-            \`;
+            const $modal = $('<div>')
+              .addClass('modal-overlay')
+              .append(
+                $('<div>')
+                  .addClass('modal-container')
+                  .append(
+                    $('<div>')
+                      .addClass('modal-header')
+                      .append($('<h3>').addClass('modal-title').text(title)),
+                    $('<div>')
+                      .addClass('modal-body')
+                      .append(
+                        $('<p>').text(message),
+                        $('<input>').addClass('modal-input').attr('type', 'text').val(defaultValue)
+                      ),
+                    $('<div>')
+                      .addClass('modal-footer')
+                      .append(
+                        $('<button>').addClass('cancel-btn').text('Cancel'),
+                        $('<button>').addClass('confirm-btn').text('OK')
+                      )
+                  )
+              );
             
-            document.body.appendChild(modal);
+            $('body').append($modal);
             
-            const input = modal.querySelector('.modal-input');
-            input.focus();
-            input.select();
+            const $input = $('.modal-input');
+            $input.focus().select();
             
-            modal.querySelector('.confirm-btn').addEventListener('click', () => {
-              const value = input.value;
-              document.body.removeChild(modal);
+            $('.confirm-btn').on('click', function() {
+              const value = $input.val();
+              $modal.remove();
               resolve(value);
             });
             
-            modal.querySelector('.cancel-btn').addEventListener('click', () => {
-              document.body.removeChild(modal);
+            $('.cancel-btn').on('click', function() {
+              $modal.remove();
               resolve(null);
             });
             
-            input.addEventListener('keyup', (e) => {
+            $input.on('keyup', function(e) {
               if (e.key === 'Enter') {
-                const value = input.value;
-                document.body.removeChild(modal);
+                const value = $input.val();
+                $modal.remove();
                 resolve(value);
               } else if (e.key === 'Escape') {
-                document.body.removeChild(modal);
+                $modal.remove();
                 resolve(null);
               }
             });
@@ -320,26 +334,30 @@ export function getDatabaseHtml(
           return new Promise((resolve) => {
             currentPromiseResolve = resolve;
             
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = \`
-              <div class="modal-container">
-                <div class="modal-header">
-                  <h3 class="modal-title">\${escapeHtml(title)}</h3>
-                </div>
-                <div class="modal-body">
-                  \${escapeHtml(message)}
-                </div>
-                <div class="modal-footer">
-                  <button class="ok-btn">OK</button>
-                </div>
-              </div>
-            \`;
+            const $modal = $('<div>')
+              .addClass('modal-overlay')
+              .append(
+                $('<div>')
+                  .addClass('modal-container')
+                  .append(
+                    $('<div>')
+                      .addClass('modal-header')
+                      .append($('<h3>').addClass('modal-title').text(title)),
+                    $('<div>')
+                      .addClass('modal-body')
+                      .text(message),
+                    $('<div>')
+                      .addClass('modal-footer')
+                      .append(
+                        $('<button>').addClass('ok-btn').text('OK')
+                      )
+                  )
+              );
             
-            document.body.appendChild(modal);
+            $('body').append($modal);
             
-            modal.querySelector('.ok-btn').addEventListener('click', () => {
-              document.body.removeChild(modal);
+            $('.ok-btn').on('click', function() {
+              $modal.remove();
               resolve();
             });
           });
@@ -428,139 +446,47 @@ export function getDatabaseHtml(
           }
         });
         
-        // Main render function
-        function renderApp() {
-          const rootEl = document.getElementById('root');
-          
-          rootEl.innerHTML = \`
-            <div class="container">
-              <h1>SQLite Database Manager</h1>
-              <p>Manage your database items through the bundled SQLite binary.</p>
-              
-              <div id="status" class="status info" style="display: none;"></div>
-              
-              <div class="actions">
-                <div class="row" style="margin-right: 10px;">
-                  <input type="text" id="itemNameInput" placeholder="Enter item name" style="margin-right: 5px;">
-                  <button id="addItemBtn">Add Item</button>
-                </div>
-                <button id="refreshBtn">Refresh</button>
-                <button id="initDatabaseBtn">Initialize Database</button>
-                <button id="clearDatabaseBtn">Clear All</button>
-                <button id="exportDataBtn">Export Data</button>
-              </div>
-              
-              \${isLoading ? 
-                \`<div id="loadingIndicator" class="loading">
-                  <div class="spinner"></div> Loading items...
-                </div>\` : 
-                items.length === 0 ?
-                \`<div id="emptyState" class="empty-state">
-                  <h3>No items found</h3>
-                  <p>Add your first item using the form above or initialize the database.</p>
-                </div>\` :
-                \`<table id="itemsTable">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Name</th>
-                      <th>Created At</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="itemsList">
-                    \${renderItems()}
-                  </tbody>
-                </table>\`
-              }
-            </div>
-          \`;
-          
-          // Set references to DOM elements after render
-          statusEl = document.getElementById('status');
-          itemNameInput = document.getElementById('itemNameInput');
-          loadingIndicator = document.getElementById('loadingIndicator');
-          emptyState = document.getElementById('emptyState');
-          itemsTable = document.getElementById('itemsTable');
-          itemsList = document.getElementById('itemsList');
-          
-          // Add event listeners
-          document.getElementById('addItemBtn').addEventListener('click', addItem);
-          document.getElementById('refreshBtn').addEventListener('click', refreshItems);
-          document.getElementById('initDatabaseBtn').addEventListener('click', initDatabase);
-          document.getElementById('clearDatabaseBtn').addEventListener('click', clearDatabase);
-          document.getElementById('exportDataBtn').addEventListener('click', exportData);
-          
-          itemNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-              addItem();
-            }
-          });
-          
-          // Add event listeners to action buttons
-          const editButtons = document.querySelectorAll('.edit-btn');
-          const viewButtons = document.querySelectorAll('.view-btn');
-          const deleteButtons = document.querySelectorAll('.delete-btn');
-          
-          editButtons.forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              const itemName = button.getAttribute('data-name');
-              editItem(itemId, itemName);
-            });
-          });
-          
-          viewButtons.forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              viewItemDetails(itemId);
-            });
-          });
-          
-          deleteButtons.forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              const itemName = button.getAttribute('data-name');
-              deleteItem(itemId, itemName);
-            });
-          });
-        }
-        
         // Helper functions
         function renderItems() {
           if (items.length === 0) return '';
           
-          return items.map(item => \`
-            <tr>
-              <td>\${escapeHtml(item.id)}</td>
-              <td>\${escapeHtml(item.name)}</td>
-              <td>\${escapeHtml(item.created_at)}</td>
-              <td>
-                <div class="item-actions">
-                  <button class="edit-btn" data-id="\${escapeHtml(item.id)}" data-name="\${escapeHtml(item.name)}">Edit</button>
-                  <button class="view-btn" data-id="\${escapeHtml(item.id)}">View</button>
-                  <button class="delete-btn" data-id="\${escapeHtml(item.id)}" data-name="\${escapeHtml(item.name)}">Delete</button>
-                </div>
-              </td>
-            </tr>
-          \`).join('');
+          return items.map(item => {
+            return $('<tr>')
+              .append(
+                $('<td>').text(item.id),
+                $('<td>').text(item.name),
+                $('<td>').text(item.created_at),
+                $('<td>').append(
+                  $('<div>').addClass('item-actions')
+                    .append(
+                      $('<button>').addClass('edit-btn').text('Edit')
+                        .attr('data-id', item.id)
+                        .attr('data-name', item.name),
+                      $('<button>').addClass('view-btn').text('View')
+                        .attr('data-id', item.id),
+                      $('<button>').addClass('delete-btn').text('Delete')
+                        .attr('data-id', item.id)
+                        .attr('data-name', item.name)
+                    )
+                )
+              )[0].outerHTML;
+          }).join('');
         }
         
         function showStatus(message, type = 'info') {
-          if (!statusEl) return;
+          if (!$status) return;
           
-          statusEl.textContent = message;
-          statusEl.className = 'status ' + type;
-          statusEl.style.display = message ? 'block' : 'none';
+          $status.text(message).attr('class', 'status ' + type).css('display', message ? 'block' : 'none');
         }
         
         function hideStatus() {
-          if (statusEl) {
-            statusEl.style.display = 'none';
+          if ($status) {
+            $status.css('display', 'none');
           }
         }
         
         function escapeHtml(unsafe) {
+          if (!unsafe) return '';
           return unsafe
             .toString()
             .replace(/&/g, "&amp;")
@@ -572,7 +498,7 @@ export function getDatabaseHtml(
         
         // Action functions
         async function addItem() {
-          const name = itemNameInput.value.trim();
+          const name = $itemNameInput.val().trim();
           
           if (!name) {
             showStatus('Please enter an item name', 'error');
@@ -584,7 +510,7 @@ export function getDatabaseHtml(
             itemName: name
           });
           
-          itemNameInput.value = '';
+          $itemNameInput.val('');
           isLoading = true;
           renderApp();
         }
@@ -663,32 +589,6 @@ export function getDatabaseHtml(
           });
         }
         
-        // Update event listeners for buttons
-        function setupItemActionListeners() {
-          document.querySelectorAll('.edit-btn').forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              const itemName = button.getAttribute('data-name');
-              editItem(itemId, itemName);
-            });
-          });
-          
-          document.querySelectorAll('.view-btn').forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              viewItemDetails(itemId);
-            });
-          });
-          
-          document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', () => {
-              const itemId = button.getAttribute('data-id');
-              const itemName = button.getAttribute('data-name');
-              deleteItem(itemId, itemName);
-            });
-          });
-        }
-        
         // Main render function
         function renderApp() {
           const rootEl = document.getElementById('root');
@@ -738,55 +638,51 @@ export function getDatabaseHtml(
           \`;
           
           // Set references to DOM elements after render
-          statusEl = document.getElementById('status');
-          itemNameInput = document.getElementById('itemNameInput');
-          loadingIndicator = document.getElementById('loadingIndicator');
-          emptyState = document.getElementById('emptyState');
-          itemsTable = document.getElementById('itemsTable');
-          itemsList = document.getElementById('itemsList');
+          $status = $('#status');
+          $itemNameInput = $('#itemNameInput');
+          $loadingIndicator = $('#loadingIndicator');
+          $emptyState = $('#emptyState');
+          $itemsTable = $('#itemsTable');
+          $itemsList = $('#itemsList');
           
           // Add event listeners
-          document.getElementById('addItemBtn').addEventListener('click', addItem);
-          document.getElementById('refreshBtn').addEventListener('click', refreshItems);
-          document.getElementById('initDatabaseBtn').addEventListener('click', initDatabase);
-          document.getElementById('clearDatabaseBtn').addEventListener('click', clearDatabase);
-          document.getElementById('exportDataBtn').addEventListener('click', exportData);
+          $('#addItemBtn').on('click', addItem);
+          $('#refreshBtn').on('click', refreshItems);
+          $('#initDatabaseBtn').on('click', initDatabase);
+          $('#clearDatabaseBtn').on('click', clearDatabase);
+          $('#exportDataBtn').on('click', exportData);
           
-          itemNameInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-              addItem();
-            }
-          });
+          if ($itemNameInput) {
+            $itemNameInput.on('keypress', function(e) {
+              if (e.key === 'Enter') {
+                addItem();
+              }
+            });
+          }
           
           // Set up item action buttons (edit, view, delete)
           setupItemActionListeners();
         }
         
-        // Handle message from extension for showing item details
-        window.addEventListener('message', event => {
-          const message = event.data;
-          console.log('Received message:', message);
+        // Update event listeners for buttons
+        function setupItemActionListeners() {
+          $('.edit-btn').off('click').on('click', function() {
+            const itemId = $(this).data('id');
+            const itemName = $(this).data('name');
+            editItem(itemId, itemName);
+          });
           
-          switch (message.command) {
-            // ...existing code...
-            
-            case 'showItemDetails':
-              if (message.details) {
-                showAlertDialog(
-                  'Item Details:\\n\\n' +
-                  'ID: ' + message.details.id + '\\n' +
-                  'Name: ' + message.details.name + '\\n' +
-                  'Created: ' + message.details.created_at + '\\n' +
-                  'Character Length: ' + (message.details.length || 'N/A') + '\\n' +
-                  'Word Count: ' + (message.details.words || 'N/A'),
-                  'Item Details'
-                );
-              }
-              break;
-            
-            // ...existing code...
-          }
-        });
+          $('.view-btn').off('click').on('click', function() {
+            const itemId = $(this).data('id');
+            viewItemDetails(itemId);
+          });
+          
+          $('.delete-btn').off('click').on('click', function() {
+            const itemId = $(this).data('id');
+            const itemName = $(this).data('name');
+            deleteItem(itemId, itemName);
+          });
+        }
         
         // Initial data load
         refreshItems();
@@ -800,213 +696,12 @@ export function getDatabaseHtml(
 }
 
 /**
- * Get the webview HTML for the results panel
- * @param webview The webview to generate HTML for
- * @param results Analysis results to display
- * @returns HTML string for the webview
- */
-export function getResultsHtml(webview: vscode.Webview, results: any): string {
-  const nonce = getNonce();
-
-  // Convert results to displayable format
-  const resultsHtml = formatResults(results);
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}' https:; style-src 'nonce-${nonce}';">
-  <title>Analysis Results</title>
-  <style nonce="${nonce}">
-    body {
-      font-family: var(--vscode-font-family);
-      font-size: var(--vscode-font-size);
-      color: var(--vscode-editor-foreground);
-      background-color: var(--vscode-editor-background);
-      padding: 20px;
-      margin: 0;
-    }
-    h1 {
-      margin-bottom: 16px;
-      font-weight: 600;
-    }
-    h2 {
-      margin-top: 24px;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-    .summary {
-      padding: 16px;
-      background-color: var(--vscode-editor-lineHighlightBackground);
-      border-radius: 4px;
-      margin-bottom: 16px;
-    }
-    .results-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .result-item {
-      background-color: var(--vscode-editor-lineHighlightBackground);
-      border-radius: 4px;
-      padding: 16px;
-      position: relative;
-    }
-    .result-item.error {
-      border-left: 4px solid #F44336;
-    }
-    .result-item.warning {
-      border-left: 4px solid #FFA500;
-    }
-    .result-item.info {
-      border-left: 4px solid #1E90FF;
-    }
-    .result-title {
-      font-weight: 500;
-      margin-bottom: 8px;
-    }
-    .result-description {
-      margin-bottom: 12px;
-    }
-    .result-location {
-      font-family: var(--vscode-editor-font-family);
-      font-size: var(--vscode-editor-font-size);
-      background-color: var(--vscode-input-background);
-      padding: 4px 8px;
-      border-radius: 2px;
-      margin-bottom: 8px;
-    }
-    .result-code {
-      font-family: var(--vscode-editor-font-family);
-      font-size: var(--vscode-editor-font-size);
-      background-color: var(--vscode-input-background);
-      padding: 8px;
-      border-radius: 2px;
-      white-space: pre;
-      overflow-x: auto;
-    }
-    .tag {
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-right: 8px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    .tag.error {
-      background-color: rgba(244, 67, 54, 0.1);
-      color: #F44336;
-    }
-    .tag.warning {
-      background-color: rgba(255, 165, 0, 0.1);
-      color: #FFA500;
-    }
-    .tag.info {
-      background-color: rgba(30, 144, 255, 0.1);
-      color: #1E90FF;
-    }
-    .action-buttons {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-    }
-    button {
-      background-color: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
-      padding: 6px 12px;
-      border-radius: 3px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: var(--vscode-button-hoverBackground);
-    }
-  </style>
-</head>
-<body>
-  <h1>Analysis Results</h1>
-
-  <div class="summary">
-    ${results.summary || "Analysis completed successfully."}
-  </div>
-
-  <div class="results-container">
-    ${resultsHtml}
-  </div>
-
-  <script nonce="${nonce}">
-    const vscode = acquireVsCodeApi();
-    
-    document.querySelectorAll('.copy-btn').forEach(button => {
-      button.addEventListener('click', (e) => {
-        const code = e.target.parentElement.previousElementSibling.textContent;
-        vscode.postMessage({
-          command: 'copy',
-          text: code
-        });
-      });
-    });
-    
-    document.querySelectorAll('.goto-btn').forEach(button => {
-      button.addEventListener('click', (e) => {
-        const location = e.target.dataset.location;
-        vscode.postMessage({
-          command: 'goto',
-          location: location
-        });
-      });
-    });
-  </script>
-</body>
-</html>`;
-}
-
-/**
- * Format analysis results into HTML
- * @param results Analysis results to format
- * @returns Formatted HTML string
- */
-function formatResults(results: any): string {
-  if (
-    !results ||
-    !results.items ||
-    !Array.isArray(results.items) ||
-    results.items.length === 0
-  ) {
-    return '<div class="result-item info"><div class="result-title">No issues found</div><div class="result-description">Code analysis completed successfully with no issues detected.</div></div>';
-  }
-
-  return results.items
-    .map((item: any) => {
-      const severity = item.severity?.toLowerCase() || "info";
-      const location = item.location
-        ? `${item.location.file}:${item.location.line}:${item.location.column || 0}`
-        : "Unknown location";
-
-      return `<div class="result-item ${severity}">
-      <div class="result-title">
-        <span class="tag ${severity}">${severity.toUpperCase()}</span>
-        ${escapeHtml(item.title || "Issue detected")}
-      </div>
-      <div class="result-description">${escapeHtml(item.message || "")}</div>
-      <div class="result-location">${escapeHtml(location)}</div>
-      ${item.code ? `<div class="result-code">${escapeHtml(item.code)}</div>` : ""}
-      <div class="action-buttons">
-        ${item.location ? `<button class="goto-btn" data-location="${escapeHtml(JSON.stringify(item.location))}">Go to Issue</button>` : ""}
-        ${item.code ? `<button class="copy-btn">Copy Code</button>` : ""}
-      </div>
-    </div>`;
-    })
-    .join("");
-}
-
-/**
  * Escape HTML special characters
  * @param unsafe Potentially unsafe string
  * @returns Escaped safe string
  */
 function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
   return unsafe
     .toString()
     .replace(/&/g, "&amp;")

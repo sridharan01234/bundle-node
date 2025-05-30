@@ -2,46 +2,30 @@ import * as vscode from "vscode";
 import * as path from "path";
 import * as os from "os";
 import { DatabasePanelManager } from "./panels/databasePanel";
-import { ResultsPanelManager } from "./panels/resultsPanel";
-import {
-  callServerForAnalysis,
-  startServer,
-  stopServer,
-} from "./utils/serverManager";
 import { showError, showInfo } from "./utils/common";
 
 // Create output channel for logging that's visible to the user
 export const outputChannel = vscode.window.createOutputChannel(
-  "SQLite Database Manager",
+  "SQLite Database Manager"
 );
 
+/**
+ * Activates the extension
+ * @param context The extension context
+ */
 export function activate(context: vscode.ExtensionContext) {
-  // Log to both console and output channel
+  // Log extension activation
   logInfo('Extension "sqlite-database-manager" is now active');
 
-  // Check operating system for binary name
-  const platform = os.platform();
-  let binaryName = "";
-
-  switch (platform) {
-    case "win32":
-      binaryName = "cross-platform-tool-win.exe";
-      break;
-    case "darwin":
-      binaryName = "cross-platform-tool-macos";
-      break;
-    case "linux":
-      binaryName = "cross-platform-tool-linux";
-      break;
-    default:
-      vscode.window.showErrorMessage(`Unsupported platform: ${platform}`);
-      return;
+  // Determine binary name based on platform
+  const binaryName = getBinaryNameForPlatform();
+  if (!binaryName) {
+    return; // Exit if platform not supported
   }
 
-  // Fix: Use the correct path to the binary in the workspace
+  // Set path to the binary in the workspace
   const workspacePath = "/home/asplap1937/Documents/bundle-node";
   const binaryPath = path.join(workspacePath, "bin", binaryName);
-
   logInfo(`Binary path: ${binaryPath}`);
 
   // Register commands
@@ -50,7 +34,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("extension.openDatabaseManager", () => {
       try {
         logInfo("Opening Database Manager panel...");
-        // Create or show the database panel
         DatabasePanelManager.getInstance(context.extensionUri, binaryPath);
       } catch (error: any) {
         logError(`Failed to open Database Manager: ${error.message}`);
@@ -58,66 +41,49 @@ export function activate(context: vscode.ExtensionContext) {
       }
     }),
 
-    // Analyze Current File Command
-    vscode.commands.registerCommand(
-      "extension.analyzeCurrentFile",
-      async () => {
-        const activeEditor = vscode.window.activeTextEditor;
-
-        if (!activeEditor) {
-          vscode.window.showWarningMessage(
-            "No active editor found. Please open a file first.",
-          );
-          return;
-        }
-
-        try {
-          // Create or show the results panel
-          const resultsPanel = ResultsPanelManager.getInstance(
-            context.extensionUri,
-          );
-          resultsPanel.showLoading();
-
-          // Start the analysis server if not already running
-          await startServer(binaryPath);
-
-          // Get the path to the current file
-          const filePath = activeEditor.document.uri.fsPath;
-          const results = await callServerForAnalysis(filePath);
-
-          // Update the panel with the results
-          resultsPanel.updateResults(
-            results,
-            `Analysis: ${path.basename(filePath)}`,
-          );
-        } catch (error: any) {
-          logError(`Analysis failed: ${error.message}`);
-          showError(`Analysis failed: ${error.message}`);
-
-          // Show error in the results panel if it exists
-          const resultsPanel = ResultsPanelManager.getInstance(
-            context.extensionUri,
-          );
-          resultsPanel.showError(error.message);
-        }
-      },
-    ),
-
     // Command to show logs
     vscode.commands.registerCommand("extension.showDatabaseLogs", () => {
       outputChannel.show();
     }),
   ];
 
-  // Handle extension deactivation
-  context.subscriptions.push(...disposables, { dispose: () => stopServer() });
+  // Add all disposables to the context
+  context.subscriptions.push(...disposables);
 
-  // Optional: Show a welcome message on first activation
+  // Show welcome message on first activation
+  showWelcomeMessage(context);
+}
+
+/**
+ * Determines the binary name based on the current platform
+ * @returns The binary name for the current platform or undefined if not supported
+ */
+function getBinaryNameForPlatform(): string | undefined {
+  const platform = os.platform();
+
+  switch (platform) {
+    case "win32":
+      return "cross-platform-tool-win.exe";
+    case "darwin":
+      return "cross-platform-tool-macos";
+    case "linux":
+      return "cross-platform-tool-linux";
+    default:
+      vscode.window.showErrorMessage(`Unsupported platform: ${platform}`);
+      return undefined;
+  }
+}
+
+/**
+ * Shows a welcome message on first activation
+ * @param context The extension context
+ */
+function showWelcomeMessage(context: vscode.ExtensionContext): void {
   const hasShownWelcome = context.globalState.get("hasShownWelcome");
   if (!hasShownWelcome) {
     showInfo(
       "Welcome to SQLite Database Manager! Get started by opening the Database Manager panel.",
-      "Open Database Manager",
+      "Open Database Manager"
     ).then((selection) => {
       if (selection === "Open Database Manager") {
         vscode.commands.executeCommand("extension.openDatabaseManager");
@@ -161,8 +127,9 @@ export function logWarning(message: string): void {
   outputChannel.appendLine(formattedMessage);
 }
 
+/**
+ * Deactivates the extension
+ */
 export function deactivate() {
-  // Clean up resources when the extension is deactivated
   logInfo('Extension "sqlite-database-manager" is now deactivated');
-  stopServer();
 }

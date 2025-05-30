@@ -2,25 +2,8 @@ const esbuild = require("esbuild");
 const path = require("path");
 const fs = require("fs");
 
-const buildDir = path.join(__dirname, "out", "webview-dist");
+// Since we're no longer using React, we can remove the webview build process
+// The webview is now pure HTML/CSS/JS embedded in the webviewUtils.ts file
 
-// Ensure build directory exists
-if (!fs.existsSync(buildDir)) {
-  fs.mkdirSync(buildDir, { recursive: true });
-}
-
-// Bundle the React application
-esbuild.buildSync({
-  entryPoints: [
-    path.join(__dirname, "src", "webview", "database", "index.tsx"),
-  ],
-  bundle: true,
-  minify: true,
-  sourcemap: true,
-  format: "esm",
-  outfile: path.join(buildDir, "database-bundle.js"),
-  external: ["vscode"],
-  define: {
-    "process.env.NODE_ENV": '"production"',
-  },
-});
+console.log("No webview bundling needed - using inline HTML/CSS/JS approach");
+console.log("Extension compilation handled by TypeScript compiler");

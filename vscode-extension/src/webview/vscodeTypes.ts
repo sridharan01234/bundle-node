@@ -1,5 +1,3 @@
-import { DatabaseItem, ItemDetails } from "./database/DatabaseApp";
-
 /**
  * Interface for the VS Code API
  */
@@ -18,6 +16,23 @@ export interface VSCodeApi<T = unknown> {
    * Set the persistent state stored for this webview
    */
   setState<K extends keyof T>(state: Pick<T, K>): void;
+}
+
+/**
+ * Database item interface
+ */
+export interface DatabaseItem {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+/**
+ * Item details with additional metadata
+ */
+export interface ItemDetails extends DatabaseItem {
+  length: number;
+  words: number;
 }
 
 /**

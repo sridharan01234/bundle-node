@@ -8,7 +8,6 @@
     "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
-    "jsx": "react",
     "skipLibCheck": true
   },
   "include": ["src"],
