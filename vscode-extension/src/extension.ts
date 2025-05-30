@@ -1,89 +1,62 @@
 import * as vscode from "vscode";
-import * as path from "path";
-import * as os from "os";
-import { DatabasePanelManager } from "./panels/databasePanel";
-import { showError, showInfo } from "./utils/common";
-
-// Create output channel for logging that's visible to the user
-export const outputChannel = vscode.window.createOutputChannel(
-  "SQLite Database Manager"
-);
+import { ConfigManager } from "./config/ConfigManager";
+import { WebviewManager } from "./webview/WebviewManager";
+import { Logger } from "./utils/Logger";
+import { UIUtils } from "./utils/UIUtils";
 
 /**
- * Activates the extension
- * @param context The extension context
+ * Main extension activation function
  */
 export function activate(context: vscode.ExtensionContext) {
-  // Log extension activation
-  logInfo('Extension "sqlite-database-manager" is now active');
+  try {
+    // Initialize core services
+    Logger.initialize();
+    Logger.info("SQLite Database Manager extension activated");
 
-  // Determine binary name based on platform
-  const binaryName = getBinaryNameForPlatform();
-  if (!binaryName) {
-    return; // Exit if platform not supported
-  }
+    const config = ConfigManager.getInstance();
+    Logger.info(`Binary path: ${config.getBinaryPath()}`);
 
-  // Set path to the binary in the workspace
-  const workspacePath = "/home/asplap1937/Documents/bundle-node";
-  const binaryPath = path.join(workspacePath, "bin", binaryName);
-  logInfo(`Binary path: ${binaryPath}`);
+    // Register commands
+    const commands = [
+      vscode.commands.registerCommand("extension.openDatabaseManager", () => {
+        try {
+          WebviewManager.createOrShow(
+            context.extensionUri,
+            config.getBinaryPath(),
+          );
+        } catch (error: any) {
+          Logger.error(`Failed to open Database Manager: ${error.message}`);
+          UIUtils.showError(
+            `Failed to open Database Manager: ${error.message}`,
+          );
+        }
+      }),
 
-  // Register commands
-  const disposables = [
-    // Database Manager Command
-    vscode.commands.registerCommand("extension.openDatabaseManager", () => {
-      try {
-        logInfo("Opening Database Manager panel...");
-        DatabasePanelManager.getInstance(context.extensionUri, binaryPath);
-      } catch (error: any) {
-        logError(`Failed to open Database Manager: ${error.message}`);
-        showError(`Failed to open Database Manager: ${error.message}`);
-      }
-    }),
+      vscode.commands.registerCommand("extension.showDatabaseLogs", () => {
+        Logger.show();
+      }),
+    ];
 
-    // Command to show logs
-    vscode.commands.registerCommand("extension.showDatabaseLogs", () => {
-      outputChannel.show();
-    }),
-  ];
+    // Add disposables to context
+    context.subscriptions.push(...commands);
 
-  // Add all disposables to the context
-  context.subscriptions.push(...disposables);
-
-  // Show welcome message on first activation
-  showWelcomeMessage(context);
-}
-
-/**
- * Determines the binary name based on the current platform
- * @returns The binary name for the current platform or undefined if not supported
- */
-function getBinaryNameForPlatform(): string | undefined {
-  const platform = os.platform();
-
-  switch (platform) {
-    case "win32":
-      return "cross-platform-tool-win.exe";
-    case "darwin":
-      return "cross-platform-tool-macos";
-    case "linux":
-      return "cross-platform-tool-linux";
-    default:
-      vscode.window.showErrorMessage(`Unsupported platform: ${platform}`);
-      return undefined;
+    // Show welcome message on first activation
+    showWelcomeMessage(context);
+  } catch (error: any) {
+    Logger.error(`Extension activation failed: ${error.message}`);
+    UIUtils.showError(`Extension activation failed: ${error.message}`);
   }
 }
 
 /**
- * Shows a welcome message on first activation
- * @param context The extension context
+ * Shows welcome message on first activation
  */
 function showWelcomeMessage(context: vscode.ExtensionContext): void {
   const hasShownWelcome = context.globalState.get("hasShownWelcome");
   if (!hasShownWelcome) {
-    showInfo(
+    UIUtils.showInfo(
       "Welcome to SQLite Database Manager! Get started by opening the Database Manager panel.",
-      "Open Database Manager"
+      "Open Database Manager",
     ).then((selection) => {
       if (selection === "Open Database Manager") {
         vscode.commands.executeCommand("extension.openDatabaseManager");
@@ -95,41 +68,8 @@ function showWelcomeMessage(context: vscode.ExtensionContext): void {
 }
 
 /**
- * Logs an informational message to console and output channel
- * @param message The message to log
- */
-export function logInfo(message: string): void {
-  const timestamp = new Date().toISOString();
-  const formattedMessage = `[${timestamp}] [INFO] ${message}`;
-  console.log(formattedMessage);
-  outputChannel.appendLine(formattedMessage);
-}
-
-/**
- * Logs an error message to console and output channel
- * @param message The error message to log
- */
-export function logError(message: string): void {
-  const timestamp = new Date().toISOString();
-  const formattedMessage = `[${timestamp}] [ERROR] ${message}`;
-  console.error(formattedMessage);
-  outputChannel.appendLine(formattedMessage);
-}
-
-/**
- * Logs a warning message to console and output channel
- * @param message The warning message to log
- */
-export function logWarning(message: string): void {
-  const timestamp = new Date().toISOString();
-  const formattedMessage = `[${timestamp}] [WARNING] ${message}`;
-  console.warn(formattedMessage);
-  outputChannel.appendLine(formattedMessage);
-}
-
-/**
- * Deactivates the extension
+ * Extension deactivation function
  */
 export function deactivate() {
-  logInfo('Extension "sqlite-database-manager" is now deactivated');
+  Logger.info("SQLite Database Manager extension deactivated");
 }

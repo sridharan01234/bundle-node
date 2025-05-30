@@ -1,24 +1,4 @@
 /**
- * Interface for the VS Code API
- */
-export interface VSCodeApi<T = unknown> {
-  /**
-   * Post a message to the VS Code extension
-   */
-  postMessage(message: any): void;
-
-  /**
-   * Get the persistent state stored for this webview
-   */
-  getState(): T | undefined;
-
-  /**
-   * Set the persistent state stored for this webview
-   */
-  setState<K extends keyof T>(state: Pick<T, K>): void;
-}
-
-/**
  * Database item interface
  */
 export interface DatabaseItem {
@@ -38,12 +18,11 @@ export interface ItemDetails extends DatabaseItem {
 /**
  * Messages from VS Code extension to webview
  */
-export type VSCodeMessage =
+export type ExtensionMessage =
   | { command: "showLoading"; message?: string }
   | { command: "updateItems"; success: boolean; items?: string; error?: string }
   | { command: "showSuccess"; message: string }
   | { command: "showError"; message: string }
-  | { command: "showInfo"; message: string }
   | { command: "showItemDetails"; details: ItemDetails };
 
 /**
@@ -58,3 +37,11 @@ export type WebviewMessage =
   | { command: "clearDatabase" }
   | { command: "exportData" }
   | { command: "viewItemDetails"; itemId: string };
+
+/**
+ * Configuration interface
+ */
+export interface ExtensionConfig {
+  binaryPath: string;
+  workspacePath: string;
+}

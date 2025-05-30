@@ -198,7 +198,6 @@ export class DatabaseManager {
    * Clear all items from the database
    */
   clearItems(db: SQLite3DatabaseInstance, callback: () => void): void {
-
     console.log("Clearing all items from the database...");
     db.run("DELETE FROM items", [], function (this: any, err: Error | null) {
       if (err) {
@@ -209,7 +208,6 @@ export class DatabaseManager {
       callback();
     });
   }
-
 
   /**
    * Show database information
