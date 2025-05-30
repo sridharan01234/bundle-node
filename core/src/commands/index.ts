@@ -113,7 +113,25 @@ export class HomeCommand {
               this.closeDatabase(db);
             });
           } else {
-            console.error("Error: Item value is required with --remove flag");
+            console.error("Error: Item ID is required with --remove flag");
+            this.closeDatabase(db);
+            process.exit(1);
+          }
+        } else if (args.includes("--update")) {
+          const itemIndex = args.indexOf("--update");
+          if (itemIndex !== -1 && args[itemIndex + 1] && args[itemIndex + 2]) {
+            this.dbManager.updateItem(
+              db,
+              args[itemIndex + 1],
+              args[itemIndex + 2],
+              () => {
+                this.closeDatabase(db);
+              },
+            );
+          } else {
+            console.error(
+              "Error: Item ID and new name are required with --update flag",
+            );
             this.closeDatabase(db);
             process.exit(1);
           }

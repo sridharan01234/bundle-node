@@ -231,31 +231,58 @@ export class DatabaseManager {
    */
   removeItem(
     db: SQLite3DatabaseInstance,
-    item: string,
+    itemId: string,
     callback: () => void,
   ): void {
-    db.run("DELETE FROM items WHERE value = ?", [item], (err) => {
-      if (err) {
-        console.error("Error removing item:", err.message);
-        process.exit(1);
-      }
-      console.log(`Item '${item}' removed successfully`);
-      callback();
-    });
+    console.log(`Removing item with ID: ${itemId}`);
+    db.run(
+      "DELETE FROM items WHERE id = ?",
+      [itemId],
+      function (this: any, err: Error | null) {
+        if (err) {
+          console.error("Error removing item:", err.message);
+          callback();
+          return;
+        }
+
+        if (this.changes > 0) {
+          console.log(`Item with ID ${itemId} removed successfully`);
+        } else {
+          console.log(`No item found with ID ${itemId}`);
+        }
+        callback();
+      },
+    );
   }
 
   /**
-   * Clear all items from the database
+   * Update an item in the database
    */
-  clearItems(db: SQLite3DatabaseInstance, callback: () => void): void {
-    db.run("DELETE FROM items", (err: { message: any }) => {
-      if (err) {
-        console.error("Error clearing items:", err.message);
+  updateItem(
+    db: SQLite3DatabaseInstance,
+    itemId: string,
+    newName: string,
+    callback: () => void,
+  ): void {
+    console.log(`Updating item ${itemId} to: "${newName}"`);
+
+    db.run(
+      "UPDATE items SET name = ? WHERE id = ?",
+      [newName, itemId],
+      function (this: any, err: Error | null) {
+        if (err) {
+          console.error("Error updating item:", err.message);
+          callback();
+          return;
+        }
+
+        if (this.changes > 0) {
+          console.log(`Item with ID ${itemId} updated successfully`);
+        } else {
+          console.log(`No item found with ID ${itemId}`);
+        }
         callback();
-        return;
-      }
-      console.log("All items cleared successfully");
-      callback();
-    });
+      },
+    );
   }
 }

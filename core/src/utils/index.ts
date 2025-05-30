@@ -16,7 +16,7 @@ export function loadCodeProcessors(): {
 
   try {
     // Try to load the index module
-    const indexModule = require("../index");
+    const indexModule = require("./code-actions");
     analyzeCode = indexModule.analyzeCode;
     formatCode = indexModule.formatCode;
     console.error("Successfully loaded index module");
