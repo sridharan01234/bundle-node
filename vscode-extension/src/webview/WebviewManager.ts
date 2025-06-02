@@ -8,7 +8,7 @@ import { UIUtils } from "../utils/UIUtils";
  * Manages the database webview panel
  */
 export class WebviewManager {
-  private static currentPanel: WebviewManager | undefined;
+  public static currentPanel: WebviewManager | undefined;
   private readonly panel: vscode.WebviewPanel;
   private readonly databaseService: DatabaseService;
   private disposables: vscode.Disposable[] = [];
@@ -582,6 +582,10 @@ export class WebviewManager {
 
   public dispose() {
     WebviewManager.currentPanel = undefined;
+
+    // Dispose of the database service to stop the HTTP server
+    this.databaseService.dispose();
+
     this.panel.dispose();
     while (this.disposables.length) {
       const x = this.disposables.pop();
