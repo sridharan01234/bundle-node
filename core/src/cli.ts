@@ -54,7 +54,6 @@ class CLI {
       case "help":
         showUsage();
         process.exit(0);
-        break;
 
       default:
         console.error(`Error: Unknown command '${command}'`);
