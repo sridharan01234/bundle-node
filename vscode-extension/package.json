@@ -45,11 +45,9 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile",
     "package": "vsce package"
   },
   "dependencies": {
-    "bundle-node-core": "file:../core"
   },
   "devDependencies": {
     "@types/node": "^16.11.8",
