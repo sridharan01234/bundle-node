@@ -33,6 +33,13 @@ export class Logger {
     this.outputChannel?.appendLine(formattedMessage);
   }
 
+  public static debug(message: string): void {
+    const timestamp = new Date().toISOString();
+    const formattedMessage = `[${timestamp}] [DEBUG] ${message}`;
+    console.debug(formattedMessage);
+    this.outputChannel?.appendLine(formattedMessage);
+  }
+
   public static show(): void {
     this.outputChannel?.show();
   }

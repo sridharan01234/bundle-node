@@ -42,17 +42,22 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "./build-binaries.sh && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package"
+    "package": "vsce package",
+    "build:binaries": "./build-binaries.sh"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^16.11.8",
     "@types/vscode": "^1.60.0",
     "typescript": "^4.5.2",
     "vsce": "^2.0.0"
-  }
+  },
+  "files": [
+    "out/**/*",
+    "bin/**/*",
+    "media/**/*"
+  ]
 }

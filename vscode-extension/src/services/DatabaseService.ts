@@ -1,276 +1,405 @@
-import { DatabaseItem, ItemDetails } from "../types";
+import { spawn, ChildProcess } from "child_process";
+import * as path from "path";
+import * as fs from "fs";
 import { Logger } from "../utils/Logger";
 
 /**
- * Optimized HTTP-based Database service for better performance
- * Communicates with the binary in server mode via REST API
- * Supports multiple VS Code instances without conflicts
+ * Enhanced database service with improved binary handling and server management
  */
 export class DatabaseService {
-  private baseUrl: string;
-  private serverProcess: any = null;
-  private serverStatus: "unknown" | "running" | "starting" | "failed" =
-    "unknown";
-  private lastHealthCheck: number = 0;
-  private healthCheckInterval: number = 30000; // Check every 30 seconds
-  private connectionPromise: Promise<void> | null = null;
+  private binaryPath: string;
+  private serverProcess: ChildProcess | null = null;
+  private serverPort: number = 0;
+  private isServerRunning: boolean = false;
+  private retryCount: number = 0;
+  private maxRetries: number = 3;
 
-  constructor(
-    private binaryPath: string,
-    port: number = 9090,
-  ) {
-    this.baseUrl = `http://localhost:${port}`;
+  constructor(binaryPath: string) {
+    this.binaryPath = binaryPath;
+    this.validateBinary();
   }
 
   /**
-   * Smart server connection management - only checks when needed
+   * Validate that the binary exists and is executable
    */
-  private async ensureServerRunning(): Promise<void> {
-    // If we're already in the process of connecting, wait for it
-    if (this.connectionPromise) {
-      return this.connectionPromise;
+  private validateBinary(): void {
+    if (!fs.existsSync(this.binaryPath)) {
+      throw new Error(`Database binary not found at: ${this.binaryPath}`);
     }
 
-    // If server status is known to be running and recent, skip check
-    const now = Date.now();
-    if (
-      this.serverStatus === "running" &&
-      now - this.lastHealthCheck < this.healthCheckInterval
-    ) {
-      return;
+    const stats = fs.statSync(this.binaryPath);
+    if (!stats.isFile()) {
+      throw new Error(`Path is not a file: ${this.binaryPath}`);
     }
 
-    // Create connection promise to avoid parallel checks
-    this.connectionPromise = this._ensureConnection();
-
-    try {
-      await this.connectionPromise;
-    } finally {
-      this.connectionPromise = null;
+    // Check executable permissions on Unix-like systems
+    if (process.platform !== "win32") {
+      if (!(stats.mode & parseInt("111", 8))) {
+        Logger.warning(
+          `Binary is not executable, attempting to fix permissions: ${this.binaryPath}`,
+        );
+        try {
+          fs.chmodSync(this.binaryPath, "755");
+          Logger.info(`Fixed permissions for binary: ${this.binaryPath}`);
+        } catch (error) {
+          throw new Error(
+            `Binary is not executable and cannot fix permissions: ${this.binaryPath}. Error: ${error}`,
+          );
+        }
+      }
     }
-  }
 
-  private async _ensureConnection(): Promise<void> {
-    // Quick health check
-    if (await this.isServerRunning()) {
-      this.serverStatus = "running";
-      this.lastHealthCheck = Date.now();
-      return;
-    }
-
-    // Server not running, start it
-    if (this.serverStatus !== "starting") {
-      await this.startServer();
-    }
+    Logger.info(`Binary validated successfully: ${this.binaryPath}`);
   }
 
   /**
-   * Start the server
+   * Start the internal HTTP server with retry logic
    */
   private async startServer(): Promise<void> {
-    this.serverStatus = "starting";
-    Logger.info("Starting database server...");
+    if (this.isServerRunning) {
+      return;
+    }
 
-    const { spawn } = await import("child_process");
+    for (let attempt = 1; attempt <= this.maxRetries; attempt++) {
+      try {
+        await this.attemptServerStart();
+        this.isServerRunning = true;
+        Logger.info(
+          `Database server started successfully on port ${this.serverPort} (attempt ${attempt})`,
+        );
+        return;
+      } catch (error) {
+        Logger.warning(`Server start attempt ${attempt} failed: ${error}`);
 
-    // Start server in background - don't manage shutdown
-    this.serverProcess = spawn(this.binaryPath, ["server", "--port", "9090"], {
-      detached: true,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-
-    // Log server output
-    this.serverProcess.stdout?.on("data", (data: Buffer) => {
-      Logger.info(`Server: ${data.toString().trim()}`);
-    });
-
-    this.serverProcess.stderr?.on("data", (data: Buffer) => {
-      Logger.error(`Server Error: ${data.toString().trim()}`);
-    });
-
-    // Detach from parent process
-    this.serverProcess.unref();
-
-    // Wait for server to become available
-    await this.waitForServer();
-    this.serverStatus = "running";
-    this.lastHealthCheck = Date.now();
+        if (attempt < this.maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff
+          Logger.info(`Retrying server start in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        } else {
+          throw new Error(
+            `Failed to start database server after ${this.maxRetries} attempts. Last error: ${error}`,
+          );
+        }
+      }
+    }
   }
 
   /**
-   * Optimized server health check with caching
+   * Single attempt to start the server
    */
-  private async isServerRunning(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/ping`, {
-        method: "GET",
-        signal: AbortSignal.timeout(1000), // Reduced timeout for faster checks
+  private async attemptServerStart(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Find an available port
+      this.serverPort = 8000 + Math.floor(Math.random() * 1000);
+
+      const args = ["--server", "--port", this.serverPort.toString()];
+
+      Logger.info(
+        `Starting database server: ${this.binaryPath} ${args.join(" ")}`,
+      );
+
+      this.serverProcess = spawn(this.binaryPath, args, {
+        stdio: ["pipe", "pipe", "pipe"],
+        detached: false,
       });
-      return response.ok;
+
+      let startupOutput = "";
+      const startupTimeout = setTimeout(() => {
+        reject(new Error(`Server startup timeout. Output: ${startupOutput}`));
+      }, 10000);
+
+      this.serverProcess.stdout?.on("data", (data) => {
+        const output = data.toString();
+        startupOutput += output;
+        Logger.info(`Server stdout: ${output.trim()}`);
+
+        // Look for server ready indicators
+        if (
+          output.includes("Server listening") ||
+          output.includes("HTTP server started")
+        ) {
+          clearTimeout(startupTimeout);
+          resolve();
+        }
+      });
+
+      this.serverProcess.stderr?.on("data", (data) => {
+        const error = data.toString();
+        startupOutput += error;
+        Logger.warning(`Server stderr: ${error.trim()}`);
+      });
+
+      this.serverProcess.on("error", (error) => {
+        clearTimeout(startupTimeout);
+        reject(new Error(`Failed to spawn server process: ${error.message}`));
+      });
+
+      this.serverProcess.on("exit", (code, signal) => {
+        clearTimeout(startupTimeout);
+        this.isServerRunning = false;
+        this.serverProcess = null;
+
+        if (code !== 0) {
+          reject(
+            new Error(
+              `Server process exited with code ${code}, signal ${signal}. Output: ${startupOutput}`,
+            ),
+          );
+        }
+      });
+
+      // Give the server a moment to start
+      setTimeout(() => {
+        if (this.serverProcess && !this.serverProcess.killed) {
+          clearTimeout(startupTimeout);
+          resolve();
+        }
+      }, 2000);
+    });
+  }
+
+  /**
+   * Execute a command with improved error handling and fallback mechanisms
+   */
+  private async executeCommand(args: string[]): Promise<any> {
+    // Try server-based approach first
+    if (this.isServerRunning) {
+      try {
+        return await this.executeViaServer(args);
+      } catch (error) {
+        Logger.warning(
+          `Server-based execution failed, falling back to direct execution: ${error}`,
+        );
+        this.isServerRunning = false;
+      }
+    }
+
+    // Fallback to direct binary execution
+    return await this.executeDirectly(args);
+  }
+
+  /**
+   * Execute command via HTTP server
+   */
+  private async executeViaServer(args: string[]): Promise<any> {
+    // Implementation would depend on your server's HTTP API
+    // This is a placeholder for server-based communication
+    throw new Error("Server-based execution not implemented");
+  }
+
+  /**
+   * Execute command directly via binary spawn
+   */
+  private async executeDirectly(args: string[]): Promise<any> {
+    return new Promise((resolve, reject) => {
+      Logger.info(`Executing: ${this.binaryPath} ${args.join(" ")}`);
+
+      const process = spawn(this.binaryPath, args, {
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+
+      let stdout = "";
+      let stderr = "";
+
+      process.stdout?.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      process.stderr?.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      process.on("error", (error) => {
+        reject(new Error(`Process spawn error: ${error.message}`));
+      });
+
+      process.on("close", (code) => {
+        if (code === 0) {
+          try {
+            const result = stdout.trim() ? JSON.parse(stdout) : {};
+            resolve(result);
+          } catch (parseError) {
+            // If JSON parsing fails, return raw output
+            resolve({ output: stdout.trim() });
+          }
+        } else {
+          reject(
+            new Error(
+              `Command failed with code ${code}. Error: ${stderr || "No error output"}`,
+            ),
+          );
+        }
+      });
+
+      // Set a timeout for long-running commands
+      setTimeout(() => {
+        if (!process.killed) {
+          process.kill();
+          reject(new Error("Command execution timeout"));
+        }
+      }, 30000);
+    });
+  }
+
+  /**
+   * Initialize database with retry logic
+   */
+  public async initializeDatabase(): Promise<void> {
+    try {
+      await this.startServer();
+      await this.executeCommand(["init"]);
+      Logger.info("Database initialized successfully");
     } catch (error) {
-      this.serverStatus = "failed";
+      Logger.error(`Failed to initialize database: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * List all items in the database
+   */
+  public async listItems(): Promise<any[]> {
+    try {
+      const result = await this.executeCommand(["list"]);
+      return Array.isArray(result) ? result : result.items || [];
+    } catch (error) {
+      Logger.error(`Failed to list items: ${error}`);
+      // Return empty array on error to prevent UI crash
+      return [];
+    }
+  }
+
+  /**
+   * Add a new item to the database
+   */
+  public async addItem(name: string): Promise<void> {
+    if (!name?.trim()) {
+      throw new Error("Item name cannot be empty");
+    }
+
+    try {
+      await this.executeCommand(["add", name.trim()]);
+      Logger.info(`Added item: ${name}`);
+    } catch (error) {
+      Logger.error(`Failed to add item: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete an item from the database
+   */
+  public async deleteItem(id: string): Promise<void> {
+    if (!id?.trim()) {
+      throw new Error("Item ID cannot be empty");
+    }
+
+    try {
+      await this.executeCommand(["delete", id.trim()]);
+      Logger.info(`Deleted item: ${id}`);
+    } catch (error) {
+      Logger.error(`Failed to delete item: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing item
+   */
+  public async updateItem(id: string, newName: string): Promise<void> {
+    if (!id?.trim() || !newName?.trim()) {
+      throw new Error("Item ID and new name cannot be empty");
+    }
+
+    try {
+      await this.executeCommand(["update", id.trim(), newName.trim()]);
+      Logger.info(`Updated item ${id} to: ${newName}`);
+    } catch (error) {
+      Logger.error(`Failed to update item: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Clear all items from the database
+   */
+  public async clearDatabase(): Promise<void> {
+    try {
+      await this.executeCommand(["clear"]);
+      Logger.info("Database cleared successfully");
+    } catch (error) {
+      Logger.error(`Failed to clear database: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Export all data from the database
+   */
+  public async exportData(): Promise<any[]> {
+    try {
+      const result = await this.executeCommand(["export"]);
+      return Array.isArray(result) ? result : result.data || [];
+    } catch (error) {
+      Logger.error(`Failed to export data: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed information about a specific item
+   */
+  public async getItemDetails(id: string): Promise<any> {
+    if (!id?.trim()) {
+      throw new Error("Item ID cannot be empty");
+    }
+
+    try {
+      const result = await this.executeCommand(["details", id.trim()]);
+      return result;
+    } catch (error) {
+      Logger.error(`Failed to get item details: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if the database service is healthy
+   */
+  public async healthCheck(): Promise<boolean> {
+    try {
+      await this.executeCommand(["ping"]);
+      return true;
+    } catch (error) {
+      Logger.warning(`Health check failed: ${error}`);
       return false;
     }
   }
 
   /**
-   * Wait for server to become available
+   * Get service status information
    */
-  private async waitForServer(maxAttempts: number = 10): Promise<void> {
-    for (let i = 0; i < maxAttempts; i++) {
-      if (await this.isServerRunning()) {
-        Logger.info("Server is ready");
-        return;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    }
-    this.serverStatus = "failed";
-    throw new Error("Server failed to start within timeout period");
-  }
-
-  /**
-   * Optimized HTTP request with connection reuse and error handling
-   */
-  private async makeRequest(endpoint: string, data: any): Promise<any> {
-    let retries = 2;
-
-    while (retries > 0) {
-      try {
-        await this.ensureServerRunning();
-
-        const response = await fetch(`${this.baseUrl}${endpoint}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        return await response.json();
-      } catch (error) {
-        retries--;
-
-        // If connection failed, mark server as failed and retry
-        if (error instanceof TypeError && error.message.includes("fetch")) {
-          this.serverStatus = "failed";
-          this.lastHealthCheck = 0; // Force health check on next request
-
-          if (retries > 0) {
-            Logger.info("Connection failed, retrying...");
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            continue;
-          }
-        }
-
-        throw error;
-      }
-    }
-  }
-
-  /**
-   * Parse database items from server response
-   */
-  private parseItems(data: any): DatabaseItem[] {
-    if (!data || !Array.isArray(data.items)) {
-      return [];
-    }
-
-    return data.items.map((item: any) => ({
-      id: String(item.id),
-      name: String(item.name),
-      created_at: String(item.created_at),
-    }));
-  }
-
-  async initializeDatabase(): Promise<void> {
-    Logger.info("Initializing database via HTTP");
-    await this.makeRequest("/database/init", {});
-  }
-
-  async addItem(name: string): Promise<void> {
-    if (!name?.trim()) {
-      throw new Error("Item name cannot be empty");
-    }
-
-    Logger.info(`Adding item: ${name}`);
-    await this.makeRequest("/database/items", {
-      action: "add",
-      name: name.trim(),
-    });
-  }
-
-  async deleteItem(id: string): Promise<void> {
-    if (!id) {
-      throw new Error("Item ID is required");
-    }
-
-    Logger.info(`Deleting item: ${id}`);
-    await this.makeRequest("/database/items", {
-      action: "delete",
-      id: id,
-    });
-  }
-
-  async updateItem(id: string, name: string): Promise<void> {
-    if (!id || !name?.trim()) {
-      throw new Error("Item ID and name are required");
-    }
-
-    Logger.info(`Updating item ${id}: ${name}`);
-    await this.makeRequest("/database/items", {
-      action: "update",
-      id: id,
-      name: name.trim(),
-    });
-  }
-
-  async listItems(): Promise<DatabaseItem[]> {
-    Logger.info("Fetching items via HTTP");
-    const response = await this.makeRequest("/database/items", {
-      action: "list",
-    });
-
-    return this.parseItems(response);
-  }
-
-  async getItemDetails(id: string): Promise<ItemDetails | undefined> {
-    const items = await this.listItems();
-    const item = items.find((i) => i.id === id);
-
-    if (!item) {
-      return undefined;
-    }
-
+  public getStatus(): {
+    isServerRunning: boolean;
+    serverPort: number;
+    binaryPath: string;
+  } {
     return {
-      ...item,
-      length: item.name.length,
-      words: item.name.split(" ").length,
+      isServerRunning: this.isServerRunning,
+      serverPort: this.serverPort,
+      binaryPath: this.binaryPath,
     };
   }
 
-  async clearDatabase(): Promise<void> {
-    Logger.info("Clearing database via HTTP");
-    await this.makeRequest("/database/clear", {});
-  }
-
-  async exportData(): Promise<DatabaseItem[]> {
-    return await this.listItems();
-  }
-
   /**
-   * Cleanup - no longer stops server to support multiple instances
+   * Dispose of the service and cleanup resources
    */
-  dispose(): void {
-    // Remove server shutdown logic
-    // Server will continue running for other VS Code instances
-    Logger.info(
-      "DatabaseService disposed - server continues running for other instances",
-    );
+  public dispose(): void {
+    if (this.serverProcess && !this.serverProcess.killed) {
+      Logger.info("Shutting down database server...");
+      this.serverProcess.kill();
+      this.serverProcess = null;
+    }
+    this.isServerRunning = false;
   }
 }

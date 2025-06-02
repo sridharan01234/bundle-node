@@ -12,7 +12,8 @@
     "build:linux": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64 --output bin/cross-platform-tool-linux --config core/package.json",
     "build:macos": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-macos-x64 --output bin/cross-platform-tool-macos --config core/package.json",
     "build:win": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-win-x64 --output bin/cross-platform-tool-win.exe --config core/package.json",
-    "build:all": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64,node16-macos-x64,node16-win-x64 --output bin/cross-platform-tool --config core/package.json && npm run compile --prefix vscode-extension",
+    "build:all": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64,node16-macos-x64,node16-win-x64 --output bin/cross-platform-tool --config core/package.json",
+    "build:extension": "npm run build:all && npm run compile --prefix vscode-extension && npm run package --prefix vscode-extension",
     "clean": "npm run clean --prefix core && rm -rf bin/cross-platform-tool*"
   },
   "devDependencies": {
