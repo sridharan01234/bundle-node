@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node esbuild.config.js",
     "build:watch": "esbuild src/cli.ts --bundle --platform=node --target=node16 --format=cjs --outfile=dist/cli.cjs --external:sqlite3 --external:node-loader --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "tsc": "tsc --project tsconfig.json"
   },
   "dependencies": {
     "node-loader": "^2.1.0",

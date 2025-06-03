@@ -139,13 +139,20 @@ function loadNativeModule(): any {
         ];
       } else {
         // Linux/macOS paths
-        possibleAssetPaths = [
-          moduleFileName,
-          `prebuilds/${platformDir}/${moduleFileName}`,
-          path.join("prebuilds", platformDir, moduleFileName),
-          path.join(__dirname, "..", "..", "prebuilds", platformDir, moduleFileName),
-          path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName)
-        ];
+        const platformDir = platform === "linux" ? "linux-x64" : 
+                           platform === "darwin" ? "darwin-x64" : null;
+
+        if (platformDir) {
+          possibleAssetPaths = [
+            moduleFileName,
+            `prebuilds/${platformDir}/${moduleFileName}`,
+            path.join("prebuilds", platformDir, moduleFileName),
+            path.join(__dirname, "..", "..", "prebuilds", platformDir, moduleFileName),
+            path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName)
+          ];
+        } else {
+          possibleAssetPaths = [moduleFileName];
+        }
       }
 
       let assetData: Buffer | null = null;

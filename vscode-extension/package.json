@@ -47,11 +47,10 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "./build-binaries.sh && npm run compile",
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "vsce package",
-    "build:binaries": "./build-binaries.sh"
+    "package": "vsce package"
   },
   "dependencies": {},
   "devDependencies": {

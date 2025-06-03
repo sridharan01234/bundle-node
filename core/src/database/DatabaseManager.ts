@@ -223,7 +223,27 @@ function loadNativeSqlite3(): any {
             // Always create pure fallback database instance
             console.log("Creating pure fallback database instance");
             db = {
-              serialize: function(callback?: Function) {
+              get: function(sql: string, params?: any, callback?: (err: Error | null, row?: any) => void): SQLite3DatabaseInstance {
+                if (typeof params === 'function') {
+                  callback = params;
+                  params = [];
+                }
+                if (callback) process.nextTick(() => callback(null, null));
+                return this;
+              },
+              run: function(sql: string, params?: any, callback?: (err: Error | null) => void): SQLite3DatabaseInstance {
+                if (typeof params === 'function') {
+                  callback = params;
+                  params = [];
+                }
+                if (callback) process.nextTick(() => callback(null));
+                return this;
+              },
+              all: function<T = any>(sql: string, params: any[], callback: (err: Error | null, rows: T[]) => void): SQLite3DatabaseInstance {
+                process.nextTick(() => callback(null, [] as T[]));
+                return this;
+              },
+              serialize: function(callback?: () => void) {
                 if (callback) process.nextTick(callback);
               },
               close: function(callback?: (err: Error | null) => void) {
@@ -231,6 +251,17 @@ function loadNativeSqlite3(): any {
                 if (callback) {
                   process.nextTick(() => callback(null));
                 }
+              },
+              prepare: function(sql: string) {
+                return {
+                  run: function(params: any, callback?: (err: Error | null) => void) {
+                    if (callback) process.nextTick(() => callback(null));
+                    return this;
+                  },
+                  finalize: function(callback?: (err: Error | null) => void) {
+                    if (callback) process.nextTick(() => callback(null));
+                  }
+                };
               }
             } as SQLite3DatabaseInstance;
             
@@ -408,18 +439,31 @@ function loadNativeSqlite3(): any {
             
             // Create a minimal fallback database
             const fallbackDb = {
-              get: function(sql: string, params: any, callback: Function) {
-                process.nextTick(() => callback(null, null));
+              get: function(sql: string, params?: any, callback?: (err: Error | null, row?: any) => void): SQLite3DatabaseInstance {
+                if (typeof params === 'function') {
+                  callback = params;
+                  params = [];
+                }
+                process.nextTick(() => {
+                  if (callback) callback(null, null);
+                });
+                return this;
               },
-              run: function(sql: string, params: any, callback?: Function) {
+              run: function(sql: string, params?: any, callback?: (err: Error | null) => void): SQLite3DatabaseInstance {
+                if (typeof params === 'function') {
+                  callback = params;
+                  params = [];
+                }
                 process.nextTick(() => {
                   if (callback) callback.call({ lastID: 0, changes: 0 }, null);
                 });
+                return this;
               },
-              all: function(sql: string, params: any, callback: Function) {
-                process.nextTick(() => callback(null, []));
+              all: function<T = any>(sql: string, params: any[], callback: (err: Error | null, rows: T[]) => void): SQLite3DatabaseInstance {
+                process.nextTick(() => callback(null, [] as T[]));
+                return this;
               },
-              serialize: function(callback?: Function) {
+              serialize: function(callback?: () => void) {
                 if (callback) process.nextTick(callback);
               },
               close: function(callback?: (err: Error | null) => void) {
@@ -427,6 +471,17 @@ function loadNativeSqlite3(): any {
                 if (callback) {
                   process.nextTick(() => callback(null));
                 }
+              },
+              prepare: function(sql: string) {
+                return {
+                  run: function(params: any, callback?: (err: Error | null) => void) {
+                    if (callback) process.nextTick(() => callback(null));
+                    return this;
+                  },
+                  finalize: function(callback?: (err: Error | null) => void) {
+                    if (callback) process.nextTick(() => callback(null));
+                  }
+                };
               }
             } as SQLite3DatabaseInstance;
             

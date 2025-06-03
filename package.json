@@ -12,9 +12,11 @@
     "build:linux": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-linux-x64 --output bin/cross-platform-tool-linux --assets prebuilds/linux-x64/sqlite3.node",
     "build:macos": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-macos-x64 --output bin/cross-platform-tool-macos --assets prebuilds/darwin-x64/sqlite3.node",
     "build:win": "npm run build --prefix core && pkg core/dist/cli.cjs --targets node16-win-x64 --output bin/cross-platform-tool-win.exe --assets prebuilds/win32-x64/node_sqlite3_win.node",
-    "build:all": "npm run build:linux && npm run build:macos && npm run build:win",
-    "build:extension": "npm run build:all && npm run compile --prefix vscode-extension && npm run package --prefix vscode-extension",
-    "clean": "npm run clean --prefix core && rm -rf bin/cross-platform-tool*"
+    "build:all": "./build-all.sh",
+    "build:extension": "./build-all.sh",
+    "clean": "./build-all.sh clean",
+    "start": "./build-all.sh",
+    "test": "./build-all.sh test"
   },
   "devDependencies": {
     "@types/node-fetch": "^2.6.12",
