@@ -25,10 +25,10 @@ class GlobalStorage {
   }
 
   addItem(name: string, created_at?: string): any {
-    const newItem = { 
-      id: this.nextId++, 
-      name: name, 
-      created_at: created_at || new Date().toISOString() 
+    const newItem = {
+      id: this.nextId++,
+      name: name,
+      created_at: created_at || new Date().toISOString(),
     };
     this.data.items.push(newItem);
     return newItem;
@@ -88,15 +88,22 @@ function loadNativeSqlite3(): any {
 
   if (isPkgBundle) {
     try {
-      console.log("PKG environment detected - loading platform-specific native SQLite3 module");
+      console.log(
+        "PKG environment detected - loading platform-specific native SQLite3 module",
+      );
 
       // Try multiple possible asset paths in pkg - Windows needs special handling
-      const platformDir = platform === "linux" ? "linux-x64" : 
-                         platform === "win32" ? "win32-x64" : 
-                         platform === "darwin" ? "darwin-x64"  : '';
+      const platformDir =
+        platform === "linux"
+          ? "linux-x64"
+          : platform === "win32"
+            ? "win32-x64"
+            : platform === "darwin"
+              ? "darwin-x64"
+              : "";
 
       let possibleAssetPaths: string[] = [];
-      
+
       if (platform === "win32") {
         // Windows-specific paths for pkg
         possibleAssetPaths = [
@@ -114,7 +121,7 @@ function loadNativeSqlite3(): any {
           path.resolve(moduleFileName),
           path.join(process.cwd(), moduleFileName),
           // Try relative to executable
-          path.join(path.dirname(process.execPath), moduleFileName)
+          path.join(path.dirname(process.execPath), moduleFileName),
         ];
       } else {
         // Linux/macOS paths
@@ -122,8 +129,20 @@ function loadNativeSqlite3(): any {
           moduleFileName,
           `prebuilds/${platformDir}/${moduleFileName}`,
           path.join("prebuilds", platformDir, moduleFileName),
-          path.join(__dirname, "..", "..", "prebuilds", platformDir, moduleFileName),
-          path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName)
+          path.join(
+            __dirname,
+            "..",
+            "..",
+            "prebuilds",
+            platformDir,
+            moduleFileName,
+          ),
+          path.join(
+            path.dirname(process.execPath),
+            "prebuilds",
+            platformDir,
+            moduleFileName,
+          ),
         ];
       }
 
@@ -153,7 +172,7 @@ function loadNativeSqlite3(): any {
         } catch (e) {
           console.log("Could not read snapshot root");
         }
-        
+
         try {
           const coreContents = fs.readdirSync("/snapshot/core");
           console.log("Snapshot core contents:", coreContents);
@@ -161,17 +180,24 @@ function loadNativeSqlite3(): any {
           console.log("Could not read snapshot core");
         }
 
-        throw new Error(`No native module asset found for ${platform}. Tried paths: ${possibleAssetPaths.join(', ')}`);
+        throw new Error(
+          `No native module asset found for ${platform}. Tried paths: ${possibleAssetPaths.join(", ")}`,
+        );
       }
 
       // For pkg bundled apps, we need to extract the asset to a temporary location
       const tempDir = require("os").tmpdir();
-      const tempModulePath = path.join(tempDir, `bundle-node-${process.pid}-${moduleFileName}`);
+      const tempModulePath = path.join(
+        tempDir,
+        `bundle-node-${process.pid}-${moduleFileName}`,
+      );
 
       // Write it to a temporary location
       fs.writeFileSync(tempModulePath, assetData);
 
-      console.log(`Extracted native module to temporary location: ${tempModulePath}`);
+      console.log(
+        `Extracted native module to temporary location: ${tempModulePath}`,
+      );
 
       // Load from the temporary location
       const nativeModule = require(tempModulePath);
@@ -187,10 +213,10 @@ function loadNativeSqlite3(): any {
 
       // Create sqlite3 compatible object - handle different native module structures
       sqlite3 = {
-        Database: function(dbPath: string, callback?: Function) {
+        Database: function (dbPath: string, callback?: Function) {
           // Create database instance with proper error handling
           let callbackCalled = false;
-          
+
           const safeCallback = (err: any = null, result?: any) => {
             if (!callbackCalled && callback) {
               callbackCalled = true;
@@ -205,89 +231,116 @@ function loadNativeSqlite3(): any {
               }
             }
           };
-          
+
           try {
             let db: SQLite3DatabaseInstance;
-            
+
             console.log(`Creating SQLite3 database connection to: ${dbPath}`);
             console.log(`Native module type: ${typeof nativeModule}`);
-            console.log(`Native module keys: ${Object.keys(nativeModule || {}).join(', ')}`);
-            
+            console.log(
+              `Native module keys: ${Object.keys(nativeModule || {}).join(", ")}`,
+            );
+
             // Try different ways to create the database based on module structure
             let constructorWorked = false;
-            
+
             // Skip native constructor entirely for now to avoid crashes
-            console.log("Skipping native constructor to avoid crashes, using pure fallback");
+            console.log(
+              "Skipping native constructor to avoid crashes, using pure fallback",
+            );
             constructorWorked = false;
-            
+
             // Always create pure fallback database instance
             console.log("Creating pure fallback database instance");
             db = {
-              get: function(sql: string, params?: any, callback?: (err: Error | null, row?: any) => void): SQLite3DatabaseInstance {
-                if (typeof params === 'function') {
+              get: function (
+                sql: string,
+                params?: any,
+                callback?: (err: Error | null, row?: any) => void,
+              ): SQLite3DatabaseInstance {
+                if (typeof params === "function") {
                   callback = params;
                   params = [];
                 }
                 if (callback) process.nextTick(() => callback(null, null));
                 return this;
               },
-              run: function(sql: string, params?: any, callback?: (err: Error | null) => void): SQLite3DatabaseInstance {
-                if (typeof params === 'function') {
+              run: function (
+                sql: string,
+                params?: any,
+                callback?: (err: Error | null) => void,
+              ): SQLite3DatabaseInstance {
+                if (typeof params === "function") {
                   callback = params;
                   params = [];
                 }
                 if (callback) process.nextTick(() => callback(null));
                 return this;
               },
-              all: function<T = any>(sql: string, params: any[], callback: (err: Error | null, rows: T[]) => void): SQLite3DatabaseInstance {
+              all: function <T = any>(
+                sql: string,
+                params: any[],
+                callback: (err: Error | null, rows: T[]) => void,
+              ): SQLite3DatabaseInstance {
                 process.nextTick(() => callback(null, [] as T[]));
                 return this;
               },
-              serialize: function(callback?: () => void) {
+              serialize: function (callback?: () => void) {
                 if (callback) process.nextTick(callback);
               },
-              close: function(callback?: (err: Error | null) => void) {
+              close: function (callback?: (err: Error | null) => void) {
                 console.log("close() called on fallback database");
                 if (callback) {
                   process.nextTick(() => callback(null));
                 }
               },
-              prepare: function(sql: string) {
+              prepare: function (sql: string) {
                 return {
-                  run: function(params: any, callback?: (err: Error | null) => void) {
+                  run: function (
+                    params: any,
+                    callback?: (err: Error | null) => void,
+                  ) {
                     if (callback) process.nextTick(() => callback(null));
                     return this;
                   },
-                  finalize: function(callback?: (err: Error | null) => void) {
+                  finalize: function (callback?: (err: Error | null) => void) {
                     if (callback) process.nextTick(() => callback(null));
-                  }
+                  },
                 };
-              }
+              },
             } as SQLite3DatabaseInstance;
-            
+
             console.log(`Database instance created: ${typeof db}`);
-            console.log(`Database methods: ${Object.keys(db || {}).join(', ')}`);
-            
+            console.log(
+              `Database methods: ${Object.keys(db || {}).join(", ")}`,
+            );
+
             // Use global shared in-memory storage instead of local storage
-            console.log(`Current global storage has ${globalStorage.getItemCount()} items`);
-            
+            console.log(
+              `Current global storage has ${globalStorage.getItemCount()} items`,
+            );
+
             // Always replace methods with our reliable fallback implementations
             console.log("Adding get method fallback");
-            db.get = function(sql: string, params?: any, callback?: (err: Error | null, row?: any) => void): SQLite3DatabaseInstance {
+            db.get = function (
+              sql: string,
+              params?: any,
+              callback?: (err: Error | null, row?: any) => void,
+            ): SQLite3DatabaseInstance {
               console.log(`get() called with SQL: ${sql}`);
-              
+
               // Handle overloaded signatures
               let actualParams: any;
               let actualCallback: (err: Error | null, row?: any) => void;
-              
-              if (typeof params === 'function') {
+
+              if (typeof params === "function") {
                 actualParams = [];
                 actualCallback = params;
               } else {
                 actualParams = params || [];
                 actualCallback = callback!;
               }
-              
+
               process.nextTick(() => {
                 try {
                   if (sql.includes("SELECT") && sql.includes("items")) {
@@ -296,7 +349,7 @@ function loadNativeSqlite3(): any {
                     actualCallback(null, result);
                   } else if (sql.includes("sqlite_master")) {
                     // Return table exists for schema queries
-                    actualCallback(null, { name: 'items' });
+                    actualCallback(null, { name: "items" });
                   } else {
                     actualCallback(null, null);
                   }
@@ -305,29 +358,36 @@ function loadNativeSqlite3(): any {
                   actualCallback(error as Error);
                 }
               });
-              
+
               return db;
             };
-            
+
             console.log("Adding run method fallback");
-            db.run = function(sql: string, params?: any, callback?: (err: Error | null) => void): SQLite3DatabaseInstance {
+            db.run = function (
+              sql: string,
+              params?: any,
+              callback?: (err: Error | null) => void,
+            ): SQLite3DatabaseInstance {
               console.log(`run() called with SQL: ${sql}`);
-              
+
               // Handle overloaded signatures
               let actualParams: any;
               let actualCallback: ((err: Error | null) => void) | undefined;
-              
-              if (typeof params === 'function') {
+
+              if (typeof params === "function") {
                 actualParams = [];
                 actualCallback = params;
               } else {
                 actualParams = params || [];
                 actualCallback = callback;
               }
-              
+
               process.nextTick(() => {
                 try {
-                  if (sql.includes("CREATE TABLE") || sql.includes("DROP TABLE")) {
+                  if (
+                    sql.includes("CREATE TABLE") ||
+                    sql.includes("DROP TABLE")
+                  ) {
                     console.log("Table operation completed (in-memory)");
                     if (sql.includes("DROP TABLE IF EXISTS items")) {
                       globalStorage.reset();
@@ -337,13 +397,21 @@ function loadNativeSqlite3(): any {
                       actualCallback.call(context, null);
                     }
                   } else if (sql.includes("INSERT INTO items")) {
-                    const nameMatch = actualParams && actualParams.length > 0 ? actualParams[0] : 
-                                     sql.match(/VALUES\s*\(\s*['"']([^'"']+)['"']\s*\)/i)?.[1];
-                    
+                    const nameMatch =
+                      actualParams && actualParams.length > 0
+                        ? actualParams[0]
+                        : sql.match(
+                            /VALUES\s*\(\s*['"']([^'"']+)['"']\s*\)/i,
+                          )?.[1];
+
                     if (nameMatch) {
                       const newItem = globalStorage.addItem(nameMatch);
-                      console.log(`Added item to global in-memory storage: ${JSON.stringify(newItem)}`);
-                      console.log(`Global storage now has ${globalStorage.getItemCount()} items`);
+                      console.log(
+                        `Added item to global in-memory storage: ${JSON.stringify(newItem)}`,
+                      );
+                      console.log(
+                        `Global storage now has ${globalStorage.getItemCount()} items`,
+                      );
                       if (actualCallback) {
                         const context = { lastID: newItem.id, changes: 1 };
                         actualCallback.call(context, null);
@@ -372,7 +440,9 @@ function loadNativeSqlite3(): any {
                     } else if (sql.includes("DELETE FROM items")) {
                       // Clear all items
                       const deletedCount = globalStorage.clearItems();
-                      console.log(`Cleared ${deletedCount} items from global in-memory storage`);
+                      console.log(
+                        `Cleared ${deletedCount} items from global in-memory storage`,
+                      );
                       if (actualCallback) {
                         const context = { lastID: 0, changes: deletedCount };
                         actualCallback.call(context, null);
@@ -393,18 +463,24 @@ function loadNativeSqlite3(): any {
                   }
                 }
               });
-              
+
               return db;
             };
-            
+
             console.log("Adding all method fallback");
-            db.all = function<T = any>(sql: string, params: any[], callback: (err: Error | null, rows: T[]) => void): SQLite3DatabaseInstance {
+            db.all = function <T = any>(
+              sql: string,
+              params: any[],
+              callback: (err: Error | null, rows: T[]) => void,
+            ): SQLite3DatabaseInstance {
               console.log(`all() called with SQL: ${sql}`);
               process.nextTick(() => {
                 try {
                   if (sql.includes("SELECT") && sql.includes("items")) {
                     const items = globalStorage.getItems();
-                    console.log(`Returning ${items.length} items from global in-memory storage`);
+                    console.log(
+                      `Returning ${items.length} items from global in-memory storage`,
+                    );
                     callback(null, items as T[]);
                   } else {
                     callback(null, [] as T[]);
@@ -414,33 +490,37 @@ function loadNativeSqlite3(): any {
                   callback(error as Error, [] as T[]);
                 }
               });
-              
+
               return db;
             };
-            
+
             // Add serialize method for compatibility
-            db.serialize = function(callback?: Function) {
+            db.serialize = function (callback?: Function) {
               if (callback) {
                 process.nextTick(callback);
               }
             };
-            
+
             console.log("Database instance prepared with all required methods");
-            
+
             // Call success callback
             process.nextTick(() => {
               console.log("Calling success callback");
               safeCallback(null);
             });
-            
+
             return db;
           } catch (error: any) {
             console.error("Error creating database instance:", error.message);
-            
+
             // Create a minimal fallback database
             const fallbackDb = {
-              get: function(sql: string, params?: any, callback?: (err: Error | null, row?: any) => void): SQLite3DatabaseInstance {
-                if (typeof params === 'function') {
+              get: function (
+                sql: string,
+                params?: any,
+                callback?: (err: Error | null, row?: any) => void,
+              ): SQLite3DatabaseInstance {
+                if (typeof params === "function") {
                   callback = params;
                   params = [];
                 }
@@ -449,8 +529,12 @@ function loadNativeSqlite3(): any {
                 });
                 return this;
               },
-              run: function(sql: string, params?: any, callback?: (err: Error | null) => void): SQLite3DatabaseInstance {
-                if (typeof params === 'function') {
+              run: function (
+                sql: string,
+                params?: any,
+                callback?: (err: Error | null) => void,
+              ): SQLite3DatabaseInstance {
+                if (typeof params === "function") {
                   callback = params;
                   params = [];
                 }
@@ -459,52 +543,62 @@ function loadNativeSqlite3(): any {
                 });
                 return this;
               },
-              all: function<T = any>(sql: string, params: any[], callback: (err: Error | null, rows: T[]) => void): SQLite3DatabaseInstance {
+              all: function <T = any>(
+                sql: string,
+                params: any[],
+                callback: (err: Error | null, rows: T[]) => void,
+              ): SQLite3DatabaseInstance {
                 process.nextTick(() => callback(null, [] as T[]));
                 return this;
               },
-              serialize: function(callback?: () => void) {
+              serialize: function (callback?: () => void) {
                 if (callback) process.nextTick(callback);
               },
-              close: function(callback?: (err: Error | null) => void) {
+              close: function (callback?: (err: Error | null) => void) {
                 console.log("close() called on fallback database");
                 if (callback) {
                   process.nextTick(() => callback(null));
                 }
               },
-              prepare: function(sql: string) {
+              prepare: function (sql: string) {
                 return {
-                  run: function(params: any, callback?: (err: Error | null) => void) {
+                  run: function (
+                    params: any,
+                    callback?: (err: Error | null) => void,
+                  ) {
                     if (callback) process.nextTick(() => callback(null));
                     return this;
                   },
-                  finalize: function(callback?: (err: Error | null) => void) {
+                  finalize: function (callback?: (err: Error | null) => void) {
                     if (callback) process.nextTick(() => callback(null));
-                  }
+                  },
                 };
-              }
+              },
             } as SQLite3DatabaseInstance;
-            
+
             console.log("Created minimal fallback database");
-            
+
             process.nextTick(() => {
               console.log("Calling success callback with fallback database");
               safeCallback(null);
             });
-            
+
             return fallbackDb;
           }
         },
-        verbose: function() { 
+        verbose: function () {
           console.log("verbose() called");
-          return sqlite3; 
-        }
+          return sqlite3;
+        },
       };
 
       console.log("Successfully loaded native SQLite3 module from pkg bundle");
       return sqlite3;
     } catch (error: any) {
-      console.error("Failed to load native SQLite3 from pkg bundle:", error.message);
+      console.error(
+        "Failed to load native SQLite3 from pkg bundle:",
+        error.message,
+      );
       throw error;
     }
   }
@@ -569,14 +663,17 @@ export class DatabaseManager {
       // Load sqlite3 dynamically
       const sqlite3Instance = loadNativeSqlite3();
 
-      const db = new sqlite3Instance.Database(this.dbPath, (err: Error | null) => {
-        if (err) {
-          console.error("Error opening database:", err.message);
-          callback(err);
-          return;
-        }
-        callback(null, db);
-      });
+      const db = new sqlite3Instance.Database(
+        this.dbPath,
+        (err: Error | null) => {
+          if (err) {
+            console.error("Error opening database:", err.message);
+            callback(err);
+            return;
+          }
+          callback(null, db);
+        },
+      );
     } catch (err: any) {
       console.error("Failed to create database connection:", err.message);
       callback(err);

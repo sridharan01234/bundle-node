@@ -41,20 +41,27 @@ function getNativeModulePath(): string | null {
   }
 
   // Check if we're running in a pkg bundled environment
-  const isPkgBundle = typeof (process as any).pkg !== 'undefined';
-  
+  const isPkgBundle = typeof (process as any).pkg !== "undefined";
+
   if (isPkgBundle) {
     // For pkg bundled environment, the asset is bundled with platform-specific filename
     // The asset path is just the filename since each binary only contains its own .node file
     const assetPath = moduleFileName;
-    console.log(`PKG environment detected. Using platform-specific asset: ${assetPath}`);
+    console.log(
+      `PKG environment detected. Using platform-specific asset: ${assetPath}`,
+    );
     return assetPath;
   }
 
   // For non-pkg environments, try multiple possible locations
-  const platformDir = platform === "linux" ? "linux-x64" : 
-                     platform === "win32" ? "win32-x64" : 
-                     platform === "darwin" ? "darwin-x64" : null;
+  const platformDir =
+    platform === "linux"
+      ? "linux-x64"
+      : platform === "win32"
+        ? "win32-x64"
+        : platform === "darwin"
+          ? "darwin-x64"
+          : null;
 
   if (!platformDir) {
     console.warn(`Unsupported platform directory for: ${platform}`);
@@ -63,9 +70,22 @@ function getNativeModulePath(): string | null {
 
   const possiblePaths = [
     // For VS Code extension environment
-    path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName),
+    path.join(
+      path.dirname(process.execPath),
+      "prebuilds",
+      platformDir,
+      moduleFileName,
+    ),
     // For development environment
-    path.join(__dirname, "..", "..", "..", "prebuilds", platformDir, moduleFileName),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "prebuilds",
+      platformDir,
+      moduleFileName,
+    ),
     // Alternative development path
     path.join(process.cwd(), "prebuilds", platformDir, moduleFileName),
   ];
@@ -79,7 +99,10 @@ function getNativeModulePath(): string | null {
     }
   }
 
-  console.warn(`No native module found for ${platform}-${arch}. Checked paths:`, possiblePaths);
+  console.warn(
+    `No native module found for ${platform}-${arch}. Checked paths:`,
+    possiblePaths,
+  );
   return null;
 }
 
@@ -88,7 +111,7 @@ function getNativeModulePath(): string | null {
  */
 function loadNativeModule(): any {
   const platform = os.platform();
-  
+
   let moduleFileName: string;
   switch (platform) {
     case "linux":
@@ -106,19 +129,26 @@ function loadNativeModule(): any {
   }
 
   // Check if we're running in a pkg bundled environment
-  const isPkgBundle = typeof (process as any).pkg !== 'undefined';
-  
+  const isPkgBundle = typeof (process as any).pkg !== "undefined";
+
   if (isPkgBundle) {
     try {
-      console.log("PKG environment detected - loading platform-specific native SQLite3 module");
+      console.log(
+        "PKG environment detected - loading platform-specific native SQLite3 module",
+      );
 
       // Try multiple possible asset paths in pkg - Windows needs special handling
-      const platformDir = platform === "linux" ? "linux-x64" : 
-                         platform === "win32" ? "win32-x64" : 
-                         platform === "darwin" ? "darwin-x64" : null;
+      const platformDir =
+        platform === "linux"
+          ? "linux-x64"
+          : platform === "win32"
+            ? "win32-x64"
+            : platform === "darwin"
+              ? "darwin-x64"
+              : null;
 
       let possibleAssetPaths: string[] = [];
-      
+
       if (platform === "win32") {
         // Windows-specific paths for pkg
         possibleAssetPaths = [
@@ -135,20 +165,36 @@ function loadNativeModule(): any {
           path.resolve(moduleFileName),
           path.join(process.cwd(), moduleFileName),
           // Try relative to executable
-          path.join(path.dirname(process.execPath), moduleFileName)
+          path.join(path.dirname(process.execPath), moduleFileName),
         ];
       } else {
         // Linux/macOS paths
-        const platformDir = platform === "linux" ? "linux-x64" : 
-                           platform === "darwin" ? "darwin-x64" : null;
+        const platformDir =
+          platform === "linux"
+            ? "linux-x64"
+            : platform === "darwin"
+              ? "darwin-x64"
+              : null;
 
         if (platformDir) {
           possibleAssetPaths = [
             moduleFileName,
             `prebuilds/${platformDir}/${moduleFileName}`,
             path.join("prebuilds", platformDir, moduleFileName),
-            path.join(__dirname, "..", "..", "prebuilds", platformDir, moduleFileName),
-            path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName)
+            path.join(
+              __dirname,
+              "..",
+              "..",
+              "prebuilds",
+              platformDir,
+              moduleFileName,
+            ),
+            path.join(
+              path.dirname(process.execPath),
+              "prebuilds",
+              platformDir,
+              moduleFileName,
+            ),
           ];
         } else {
           possibleAssetPaths = [moduleFileName];
@@ -173,17 +219,24 @@ function loadNativeModule(): any {
       }
 
       if (!assetData || !usedPath) {
-        console.warn(`No native module asset found for ${platform}. Tried paths: ${possibleAssetPaths.join(', ')}`);
+        console.warn(
+          `No native module asset found for ${platform}. Tried paths: ${possibleAssetPaths.join(", ")}`,
+        );
         return null;
       }
 
       // For pkg bundled apps, extract the asset to a temporary location
       const tempDir = require("os").tmpdir();
-      const tempModulePath = path.join(tempDir, `bundle-node-utils-${process.pid}-${moduleFileName}`);
+      const tempModulePath = path.join(
+        tempDir,
+        `bundle-node-utils-${process.pid}-${moduleFileName}`,
+      );
 
       // Write it to a temporary location
       fs.writeFileSync(tempModulePath, assetData);
-      console.log(`Extracted native module to temporary location: ${tempModulePath}`);
+      console.log(
+        `Extracted native module to temporary location: ${tempModulePath}`,
+      );
 
       // Load from the temporary location
       const nativeModule = require(tempModulePath);
@@ -199,17 +252,24 @@ function loadNativeModule(): any {
 
       console.log("Successfully loaded native SQLite3 module from pkg bundle");
       return nativeModule;
-      
     } catch (error: any) {
-      console.error(`Failed to load native module from pkg bundle:`, error.message);
+      console.error(
+        `Failed to load native module from pkg bundle:`,
+        error.message,
+      );
       return null;
     }
   }
 
   // For non-pkg environments, try multiple possible locations
-  const platformDir = platform === "linux" ? "linux-x64" : 
-                     platform === "win32" ? "win32-x64" : 
-                     platform === "darwin" ? "darwin-x64" : null;
+  const platformDir =
+    platform === "linux"
+      ? "linux-x64"
+      : platform === "win32"
+        ? "win32-x64"
+        : platform === "darwin"
+          ? "darwin-x64"
+          : null;
 
   if (!platformDir) {
     console.warn(`Unsupported platform directory for: ${platform}`);
@@ -218,9 +278,22 @@ function loadNativeModule(): any {
 
   const possiblePaths = [
     // For VS Code extension environment
-    path.join(path.dirname(process.execPath), "prebuilds", platformDir, moduleFileName),
+    path.join(
+      path.dirname(process.execPath),
+      "prebuilds",
+      platformDir,
+      moduleFileName,
+    ),
     // For development environment
-    path.join(__dirname, "..", "..", "..", "prebuilds", platformDir, moduleFileName),
+    path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "prebuilds",
+      platformDir,
+      moduleFileName,
+    ),
     // Alternative development path
     path.join(process.cwd(), "prebuilds", platformDir, moduleFileName),
   ];
@@ -235,13 +308,19 @@ function loadNativeModule(): any {
         console.log("Successfully loaded native SQLite3 module");
         return nativeModule;
       } catch (error: any) {
-        console.error(`Failed to load native module from ${modulePath}:`, error.message);
+        console.error(
+          `Failed to load native module from ${modulePath}:`,
+          error.message,
+        );
         continue;
       }
     }
   }
 
-  console.warn(`No native module found for ${platform}. Checked paths:`, possiblePaths);
+  console.warn(
+    `No native module found for ${platform}. Checked paths:`,
+    possiblePaths,
+  );
   return null;
 }
 
@@ -267,7 +346,9 @@ export function loadCodeProcessors(): {
 
     // If native module is available, you can enhance the processors with native functionality
     if (nativeModule) {
-      console.log("Native SQLite3 module is available for enhanced functionality");
+      console.log(
+        "Native SQLite3 module is available for enhanced functionality",
+      );
     }
   } catch (err: any) {
     console.error("Error loading local module:", err.message);
