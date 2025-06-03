@@ -67,13 +67,13 @@ export class WebviewManager {
           await this.loadItems();
           break;
         case "deleteItem":
-          await this.databaseService.deleteItem(message.itemId);
+          await this.databaseService.deleteItem(String(message.itemId));
           UIUtils.showInfo("Item deleted successfully");
           await this.loadItems();
           break;
         case "updateItem":
           await this.databaseService.updateItem(
-            message.itemId,
+            String(message.itemId),
             message.newName,
           );
           UIUtils.showInfo("Item updated successfully");
@@ -88,7 +88,7 @@ export class WebviewManager {
           await this.exportData();
           break;
         case "viewItemDetails":
-          await this.showItemDetails(message.itemId);
+          await this.showItemDetails(String(message.itemId));
           break;
       }
     } catch (error: any) {
