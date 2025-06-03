@@ -27,7 +27,9 @@ export class DatabaseService {
 
     // Start the server automatically when the service is initialized
     this.ensureServerRunning().catch((error) => {
-      Logger.error(`Failed to ensure server is running on initialization: ${error}`);
+      Logger.error(
+        `Failed to ensure server is running on initialization: ${error}`,
+      );
     });
 
     // Start periodic health checks
@@ -78,7 +80,7 @@ export class DatabaseService {
           Logger.warning("Health check failed, server appears to be down");
           this.isServerRunning = false;
           DatabaseService.globalServerRunning = false;
-          
+
           // Attempt to restart server
           await this.ensureServerRunning();
         }
@@ -101,7 +103,7 @@ export class DatabaseService {
 
     try {
       const http = require("http");
-      
+
       return new Promise<boolean>((resolve) => {
         const options = {
           hostname: "localhost",
@@ -112,13 +114,15 @@ export class DatabaseService {
         };
 
         const req = http.request(options, (res: any) => {
-          let responseData = '';
-          res.on('data', (chunk: any) => {
+          let responseData = "";
+          res.on("data", (chunk: any) => {
             responseData += chunk;
           });
-          res.on('end', () => {
+          res.on("end", () => {
             const isHealthy = res.statusCode === 200;
-            Logger.info(`Health check response: status=${res.statusCode}, data=${responseData}`);
+            Logger.info(
+              `Health check response: status=${res.statusCode}, data=${responseData}`,
+            );
             resolve(isHealthy);
           });
         });
@@ -127,13 +131,13 @@ export class DatabaseService {
           Logger.warning(`Health check error: ${error.message}`);
           resolve(false);
         });
-        
+
         req.on("timeout", () => {
           Logger.warning("Health check timeout");
           req.destroy();
           resolve(false);
         });
-        
+
         req.setTimeout(3000);
         req.end();
       });
@@ -149,9 +153,11 @@ export class DatabaseService {
   private async ensureServerRunning(): Promise<void> {
     // First, check if a server is already running on the fixed port and it's our SQLite server
     const isExistingServerHealthy = await this.performHealthCheck();
-    
+
     if (isExistingServerHealthy) {
-      Logger.info(`SQLite server already running on port ${this.serverPort}, reusing existing instance`);
+      Logger.info(
+        `SQLite server already running on port ${this.serverPort}, reusing existing instance`,
+      );
       this.isServerRunning = true;
       DatabaseService.globalServerRunning = true;
       return;
@@ -159,24 +165,32 @@ export class DatabaseService {
 
     // If we think we have a server running but health check failed, clean up
     if (this.isServerRunning || DatabaseService.globalServerRunning) {
-      Logger.warning("Server was marked as running but health check failed, cleaning up");
+      Logger.warning(
+        "Server was marked as running but health check failed, cleaning up",
+      );
       this.isServerRunning = false;
       DatabaseService.globalServerRunning = false;
       this.killServerProcess();
     }
 
     // Check if the fixed port is available
-    const isFixedPortFree = await this.checkPortAvailability(DatabaseService.FIXED_SERVER_PORT);
-    
+    const isFixedPortFree = await this.checkPortAvailability(
+      DatabaseService.FIXED_SERVER_PORT,
+    );
+
     if (!isFixedPortFree) {
       // Port is occupied by something else, find an alternative port
-      Logger.warning(`Fixed port ${DatabaseService.FIXED_SERVER_PORT} is occupied by another service, searching for alternative port`);
+      Logger.warning(
+        `Fixed port ${DatabaseService.FIXED_SERVER_PORT} is occupied by another service, searching for alternative port`,
+      );
       const alternativePort = await this.findAvailablePort();
       if (alternativePort) {
         Logger.info(`Using alternative port: ${alternativePort}`);
         this.serverPort = alternativePort;
       } else {
-        throw new Error(`No available ports found in range ${DatabaseService.FIXED_SERVER_PORT}-${DatabaseService.FIXED_SERVER_PORT + 10}`);
+        throw new Error(
+          `No available ports found in range ${DatabaseService.FIXED_SERVER_PORT}-${DatabaseService.FIXED_SERVER_PORT + 10}`,
+        );
       }
     }
 
@@ -190,17 +204,17 @@ export class DatabaseService {
    */
   private async checkPortAvailability(port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const net = require('net');
+      const net = require("net");
       const server = net.createServer();
-      
+
       server.listen(port, () => {
-        server.once('close', () => {
+        server.once("close", () => {
           resolve(true);
         });
         server.close();
       });
-      
-      server.on('error', () => {
+
+      server.on("error", () => {
         resolve(false);
       });
     });
@@ -212,14 +226,14 @@ export class DatabaseService {
   private async findAvailablePort(): Promise<number | null> {
     const startPort = DatabaseService.FIXED_SERVER_PORT;
     const maxPort = startPort + 10; // Check up to 10 ports above the fixed port
-    
+
     for (let port = startPort; port <= maxPort; port++) {
       const isAvailable = await this.checkPortAvailability(port);
       if (isAvailable) {
         return port;
       }
     }
-    
+
     return null;
   }
 
@@ -228,28 +242,37 @@ export class DatabaseService {
    */
   private async terminateExistingServer(): Promise<void> {
     try {
-      Logger.info(`Attempting to terminate existing server on port ${this.serverPort}`);
-      
+      Logger.info(
+        `Attempting to terminate existing server on port ${this.serverPort}`,
+      );
+
       // Try to find and kill the process using the port
-      const { spawn } = require('child_process');
-      
+      const { spawn } = require("child_process");
+
       // Use lsof to find the process using the port
-      const lsofProcess = spawn('lsof', ['-ti', `:${this.serverPort}`], { stdio: 'pipe' });
-      
-      let pidOutput = '';
-      lsofProcess.stdout.on('data', (data: any) => {
+      const lsofProcess = spawn("lsof", ["-ti", `:${this.serverPort}`], {
+        stdio: "pipe",
+      });
+
+      let pidOutput = "";
+      lsofProcess.stdout.on("data", (data: any) => {
         pidOutput += data.toString();
       });
-      
-      lsofProcess.on('close', (code: number) => {
+
+      lsofProcess.on("close", (code: number) => {
         if (code === 0 && pidOutput.trim()) {
-          const pids = pidOutput.trim().split('\n').filter(pid => pid.trim());
-          Logger.info(`Found processes using port ${this.serverPort}: ${pids.join(', ')}`);
-          
+          const pids = pidOutput
+            .trim()
+            .split("\n")
+            .filter((pid) => pid.trim());
+          Logger.info(
+            `Found processes using port ${this.serverPort}: ${pids.join(", ")}`,
+          );
+
           // Kill each process
-          pids.forEach(pid => {
+          pids.forEach((pid) => {
             try {
-              process.kill(parseInt(pid.trim()), 'SIGTERM');
+              process.kill(parseInt(pid.trim()), "SIGTERM");
               Logger.info(`Sent SIGTERM to process ${pid}`);
             } catch (error) {
               Logger.warning(`Failed to kill process ${pid}: ${error}`);
@@ -257,11 +280,10 @@ export class DatabaseService {
           });
         }
       });
-      
-      lsofProcess.on('error', (error: any) => {
+
+      lsofProcess.on("error", (error: any) => {
         Logger.warning(`lsof command failed: ${error.message}`);
       });
-      
     } catch (error) {
       Logger.warning(`Failed to terminate existing server: ${error}`);
     }
@@ -315,7 +337,9 @@ export class DatabaseService {
 
       // Check if binary exists
       if (!fs.existsSync(this.binaryPath)) {
-        return reject(new Error(`Binary not found at path: ${this.binaryPath}`));
+        return reject(
+          new Error(`Binary not found at path: ${this.binaryPath}`),
+        );
       }
 
       // Set environment variables
@@ -360,10 +384,15 @@ export class DatabaseService {
         Logger.warning(`Server stderr: ${error.trim()}`);
 
         // Check for port already in use (another instance started first)
-        if (error.includes("EADDRINUSE") || error.includes("port") && error.includes("already")) {
+        if (
+          error.includes("EADDRINUSE") ||
+          (error.includes("port") && error.includes("already"))
+        ) {
           clearTimeout(startupTimeout);
-          Logger.info("Port already in use, checking if existing server is healthy");
-          
+          Logger.info(
+            "Port already in use, checking if existing server is healthy",
+          );
+
           // Give the existing server a moment, then check health
           setTimeout(async () => {
             const isHealthy = await this.performHealthCheck();
@@ -373,7 +402,9 @@ export class DatabaseService {
               resolve();
             } else {
               this.killServerProcess();
-              reject(new Error("Port in use but existing server is not healthy"));
+              reject(
+                new Error("Port in use but existing server is not healthy"),
+              );
             }
           }, 1000);
         }
@@ -418,12 +449,12 @@ export class DatabaseService {
   private killServerProcess(): void {
     if (this.serverProcess && !this.serverProcess.killed) {
       try {
-        this.serverProcess.kill('SIGTERM');
-        
+        this.serverProcess.kill("SIGTERM");
+
         // Force kill after timeout
         setTimeout(() => {
           if (this.serverProcess && !this.serverProcess.killed) {
-            this.serverProcess.kill('SIGKILL');
+            this.serverProcess.kill("SIGKILL");
           }
         }, 5000);
       } catch (error) {
@@ -449,19 +480,19 @@ export class DatabaseService {
   private async executeCommand(args: string[]): Promise<any> {
     // Ensure server is running before executing commands
     await this.ensureServerRunning();
-    
+
     // Always try server-based approach first if the server is running
     if (this.isServerRunning) {
       try {
         return await this.executeViaServer(args);
       } catch (error: any) {
         Logger.warning(`Server-based execution failed: ${error}`);
-        
+
         // If it's a connection error, mark server as down and retry once
-        if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET') {
+        if (error.code === "ECONNREFUSED" || error.code === "ECONNRESET") {
           this.isServerRunning = false;
           DatabaseService.globalServerRunning = false;
-          
+
           // Try to restart server and retry once
           try {
             await this.ensureServerRunning();
@@ -474,7 +505,9 @@ export class DatabaseService {
     }
 
     // Fallback to direct binary execution
-    Logger.warning(`Falling back to direct CLI execution for: ${args.join(' ')}`);
+    Logger.warning(
+      `Falling back to direct CLI execution for: ${args.join(" ")}`,
+    );
     return await this.executeDirectly(args);
   }
 
@@ -490,7 +523,7 @@ export class DatabaseService {
       // Map CLI commands to API endpoints and request bodies
       let endpoint = "";
       let requestBody: any = {};
-      
+
       if (args[0] === "home") {
         if (args[1] === "--list") {
           endpoint = "/database/items";
@@ -546,7 +579,9 @@ export class DatabaseService {
       }
 
       const requestData = JSON.stringify(requestBody);
-      Logger.info(`Sending API request to endpoint: ${endpoint}, body: ${requestData}`);
+      Logger.info(
+        `Sending API request to endpoint: ${endpoint}, body: ${requestData}`,
+      );
 
       return new Promise((resolve, reject) => {
         const options = {
@@ -573,7 +608,7 @@ export class DatabaseService {
               try {
                 const result = data ? JSON.parse(data) : {};
                 Logger.info(`Server response received: ${res.statusCode}`);
-                
+
                 if (result.items) {
                   resolve(result.items);
                 } else if (result.success) {
@@ -583,11 +618,19 @@ export class DatabaseService {
                 }
               } catch (parseError: any) {
                 Logger.error(`Error parsing server response: ${parseError}`);
-                reject(new Error(`Failed to parse server response: ${parseError.message}`));
+                reject(
+                  new Error(
+                    `Failed to parse server response: ${parseError.message}`,
+                  ),
+                );
               }
             } else {
               Logger.error(`Server returned error status: ${res.statusCode}`);
-              reject(new Error(`Server returned status code ${res.statusCode}: ${data || "No response body"}`));
+              reject(
+                new Error(
+                  `Server returned status code ${res.statusCode}: ${data || "No response body"}`,
+                ),
+              );
             }
           });
         });
@@ -642,7 +685,11 @@ export class DatabaseService {
             resolve({ output: stdout.trim() });
           }
         } else {
-          reject(new Error(`Command failed with code ${code}. Error: ${stderr || "No error output"}`));
+          reject(
+            new Error(
+              `Command failed with code ${code}. Error: ${stderr || "No error output"}`,
+            ),
+          );
         }
       });
 
@@ -725,7 +772,12 @@ export class DatabaseService {
     }
 
     try {
-      await this.executeCommand(["home", "--update", id.trim(), newName.trim()]);
+      await this.executeCommand([
+        "home",
+        "--update",
+        id.trim(),
+        newName.trim(),
+      ]);
       Logger.info(`Updated item ${id} to: ${newName}`);
     } catch (error) {
       Logger.error(`Failed to update item: ${error}`);
@@ -768,7 +820,11 @@ export class DatabaseService {
     }
 
     try {
-      const result = await this.executeCommand(["home", "--details", id.trim()]);
+      const result = await this.executeCommand([
+        "home",
+        "--details",
+        id.trim(),
+      ]);
       return result;
     } catch (error) {
       Logger.error(`Failed to get item details: ${error}`);
@@ -811,12 +867,12 @@ export class DatabaseService {
    */
   public dispose(): void {
     Logger.info("Disposing DatabaseService");
-    
+
     if (this.healthCheckTimer) {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
     }
-    
+
     // Only stop the server if this instance started it
     if (this.serverProcess) {
       this.stopServer();
