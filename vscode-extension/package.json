@@ -2,7 +2,7 @@
   "name": "sqlite-database-manager",
   "displayName": "SQLite Database Manager",
   "description": "A lightweight SQLite database manager for VS Code",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "publisher": "example-publisher",
   "license": "MIT",
   "repository": {
