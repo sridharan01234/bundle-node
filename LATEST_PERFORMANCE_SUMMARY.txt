@@ -1,0 +1,29 @@
+
+===============================================================================
+                           PERFORMANCE TEST SUMMARY
+===============================================================================
+Test Date: 2025-06-04T05:56:28.046Z
+Test ID: 2025-06-04T05-56-15
+Server: http://localhost:9229
+
+SYSTEM:
+- OS: linux
+- Node.js: v22.13.1
+- CPU Cores: 4
+- Memory: 15Gi
+
+PERFORMANCE HIGHLIGHTS:
+- ping: 1.04ms avg (100 requests)
+- analyze: 1.06ms avg (50 requests)
+- format: 1.04ms avg (50 requests)
+- dbList: 1.57ms avg (30 requests)
+- dbAdd: 1.30ms avg (20 requests)
+- concurrent: 6.80ms avg (20 requests)
+- load: 0.11ms avg (87451 requests)
+
+OVERALL GRADE: A+ (Excellent)
+PRODUCTION READY: ⚠️  NEEDS OPTIMIZATION (consistency)
+
+FULL REPORT: /home/asplap1937/Documents/bundle-node/reports/performance_report_2025-06-04T05-56-15.txt
+JSON DATA: /home/asplap1937/Documents/bundle-node/reports/performance_data_2025-06-04T05-56-15.json
+===============================================================================

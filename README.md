@@ -121,27 +121,32 @@ The project uses a sophisticated command pattern with dependency injection:
 ### Core Components
 
 1. **CLIApplication** (`/core/src/cli/CLIApplication.ts`)
+
    - Main application orchestrator
    - Handles command parsing and execution
    - Provides unified help system
 
 2. **CommandRegistry** (`/core/src/commands/CommandRegistry.ts`)
+
    - Manages command registration and execution
    - Provides extensible command system
    - Handles dependency injection for commands
 
 3. **Individual Commands** (`/core/src/commands/`)
+
    - `AnalyzeCommand.ts` - Code analysis functionality
    - `FormatCommand.ts` - Code formatting functionality
    - `HomeCommand.ts` - Database operations
    - `ServerCommand.ts` - HTTP server mode
 
 4. **DatabaseManager** (`/core/src/database/DatabaseManager.ts`)
+
    - Handles all SQLite operations
    - Manages database connections and lifecycle
    - Provides CRUD operations for items
 
 5. **HttpServer** (`/core/src/server/HttpServer.ts`)
+
    - REST API server implementation
    - Handles analyze, format, and database endpoints
    - Provides CORS support for development
@@ -203,7 +208,7 @@ The build process uses pkg with platform-specific SQLite3 native bindings:
 ```bash
 # Build for specific platforms (from root directory)
 npm run build:linux    # Linux x64
-npm run build:macos    # macOS x64  
+npm run build:macos    # macOS x64
 npm run build:win      # Windows x64
 
 # Build all platforms
@@ -253,7 +258,7 @@ cd intellij-adapter
 # Analyze a JavaScript file
 ./bin/cross-platform-tool-linux analyze samples/sample.js
 
-# Format a TypeScript file  
+# Format a TypeScript file
 ./bin/cross-platform-tool-linux format test-file.js
 
 # Initialize the SQLite database
@@ -284,11 +289,13 @@ The server provides REST API endpoints without authentication for simplified mul
 The VS Code extension is named "SQLite Database Manager" (not "Cross-Platform Extension"):
 
 1. **Install the extension**:
+
    ```bash
    code --install-extension sqlite-database-manager-0.1.7.vsix
    ```
 
 2. **Available commands**:
+
    - `SQLite: Open Database Manager` - Opens the main database management panel
    - `SQLite: Show Logs` - Shows extension logs for debugging
 
@@ -321,6 +328,7 @@ The VS Code extension is named "SQLite Database Manager" (not "Cross-Platform Ex
 Health check endpoint to verify server availability.
 
 **Response:**
+
 ```
 Status: 200 OK
 Content-Type: text/plain
@@ -333,12 +341,13 @@ pong
 Server status and available endpoints.
 
 **Response:**
+
 ```json
 {
-  "status": "running", 
+  "status": "running",
   "endpoints": [
     "/ping",
-    "/analyze", 
+    "/analyze",
     "/format",
     "/database/init",
     "/database/items",
@@ -354,14 +363,16 @@ Server status and available endpoints.
 Analyze JavaScript/TypeScript code for issues and improvements.
 
 **Request Body:**
+
 ```json
 {
-  "filePath": "/path/to/file.js",     // Optional: path to file
-  "code": "console.log('hello');"     // Optional: direct code string
+  "filePath": "/path/to/file.js", // Optional: path to file
+  "code": "console.log('hello');" // Optional: direct code string
 }
 ```
 
 **Response:**
+
 ```json
 {
   "fileName": "file.js",
@@ -379,15 +390,17 @@ Analyze JavaScript/TypeScript code for issues and improvements.
 Format JavaScript/TypeScript code according to standards.
 
 **Request Body:**
+
 ```json
 {
-  "filePath": "/path/to/file.js",     // Optional: path to file
+  "filePath": "/path/to/file.js", // Optional: path to file
   "code": "function test(){return 1}", // Optional: direct code string
-  "saveToFile": true                   // Optional: save formatted code to file
+  "saveToFile": true // Optional: save formatted code to file
 }
 ```
 
 **Response:**
+
 ```json
 {
   "formatted": "function test() {\n  return 1;\n}",
@@ -402,11 +415,13 @@ Format JavaScript/TypeScript code according to standards.
 Initialize the SQLite database with required tables.
 
 **Request Body:**
+
 ```json
 {}
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -419,12 +434,14 @@ Initialize the SQLite database with required tables.
 Perform CRUD operations on database items.
 
 **Actions:**
+
 - `list` - List all items
 - `add` - Add new item (requires `name` parameter)
-- `update` - Update existing item (requires `id` and `name` parameters)  
+- `update` - Update existing item (requires `id` and `name` parameters)
 - `delete` - Delete item (requires `id` parameter)
 
 **List Items Request:**
+
 ```json
 {
   "action": "list"
@@ -432,6 +449,7 @@ Perform CRUD operations on database items.
 ```
 
 **Add Item Request:**
+
 ```json
 {
   "action": "add",
@@ -444,11 +462,13 @@ Perform CRUD operations on database items.
 Clear all items from the database.
 
 **Request Body:**
+
 ```json
 {}
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -502,16 +522,19 @@ const { analyzeCode, formatCode } = loadCodeProcessors();
 ### Pros
 
 1. **Code Reusability**
+
    - Single core implementation shared across all platforms
    - Consistent behavior and results
    - Reduced development and maintenance overhead
 
-2. **Maintainability**  
+2. **Maintainability**
+
    - Bug fixes only need to be implemented once
    - Centralized testing of business logic
    - Version consistency across platforms
 
 3. **Development Efficiency**
+
    - Command pattern allows easy extension
    - TypeScript provides type safety
    - Modular architecture supports team development
@@ -524,11 +547,13 @@ const { analyzeCode, formatCode } = loadCodeProcessors();
 ### Cons
 
 1. **Performance Overhead**
+
    - Subprocess execution overhead for non-VS Code integrations
    - Node.js runtime memory footprint
    - File I/O operations for communication
 
 2. **Development Complexity**
+
    - Multiple platform expertise required
    - Cross-platform testing challenges
    - Native dependency management complexity
@@ -548,8 +573,9 @@ npm test
 ```
 
 Test coverage includes:
+
 - Code analysis functionality
-- Formatting operations  
+- Formatting operations
 - Database operations
 - Error handling scenarios
 - Command registration and execution
@@ -575,33 +601,38 @@ ls -la bin/prebuilds/linux-x64/sqlite3.node
 ### Common Issues
 
 1. **SQLite3 Binding Not Found**
+
    - Ensure prebuilds directory contains platform-specific bindings
    - Check file permissions on native bindings
    - Verify pkg assets configuration includes correct binding paths
 
 2. **Module Import Errors**
+
    - Ensure esbuild compilation completed successfully
    - Check TypeScript compilation output in dist/ directory
    - Verify all dependencies are installed
 
 3. **Database Connection Issues**
+
    - Check write permissions in application directory
    - Ensure SQLite3 native bindings are accessible
    - Verify database initialization completed successfully
 
 4. **VS Code Extension Issues**
+
    - Use `SQLite: Show Logs` command for detailed logs
    - Check binary path configuration in ConfigManager
    - Verify extension activation events
 
 5. **Server Connection Issues**
+
    ```bash
    # Check if port is in use (default 9229, not 9090)
    lsof -i :9229
-   
+
    # Test server health
    curl -X GET http://localhost:9229/ping
-   
+
    # Check available endpoints
    curl -X GET http://localhost:9229/
    ```
@@ -649,11 +680,13 @@ ls -la bin/prebuilds/linux-x64/sqlite3.node
 ### Package Configuration
 
 **esbuild Configuration** (in `core/esbuild.config.js`):
+
 - Bundles TypeScript to CommonJS for pkg compatibility
 - Excludes native modules from bundling
 - Optimizes for Node.js 16+ target
 
 **pkg Configuration** (in root `package.json`):
+
 ```json
 {
   "scripts": {
@@ -689,6 +722,7 @@ ls -la bin/prebuilds/linux-x64/sqlite3.node
 ### Best Practices
 
 1. **Core Library Development**
+
    - Keep platform-agnostic
    - Use dependency injection
    - Implement proper error handling

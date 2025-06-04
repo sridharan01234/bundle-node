@@ -1,0 +1,244 @@
+
+===============================================================================
+                        COMPREHENSIVE PERFORMANCE REPORT
+===============================================================================
+Generated: 2025-06-04T05:56:28.045Z
+Duration: 12.69 seconds
+Test ID: 2025-06-04T05-56-15
+Server: http://localhost:9229
+
+===============================================================================
+🖥️  SYSTEM INFORMATION
+===============================================================================
+Hostname:         asplap1937
+OS:               Linux asplap1937 6.8.0-60-generic #63~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Tue Apr 22 19:00:15 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
+Node.js Version:  v22.13.1
+Platform:         linux
+Architecture:     x64
+CPU Cores:        4
+Memory:           15Gi
+Available Memory: 6.1Gi
+Disk Space:       88G
+Working Dir:      /home/asplap1937/Documents/bundle-node
+
+BINARY INFORMATION:
+cross-platform-tool-linux:
+  - Size: 45.68MB
+  - Last Modified: 2025-06-04T04:55:26.512Z
+  - Executable: Yes
+cross-platform-tool-macos:
+  - Size: 51.13MB
+  - Last Modified: 2025-06-04T04:55:31.133Z
+  - Executable: Yes
+cross-platform-tool-win.exe:
+  - Size: 38.25MB
+  - Last Modified: 2025-06-04T04:55:37.625Z
+  - Executable: No
+
+===============================================================================
+⚙️  TEST CONFIGURATION
+===============================================================================
+Test Endpoints:
+- ping: 100 requests to /ping
+- analyze: 50 requests to /analyze
+- format: 50 requests to /format
+- dbList: 30 requests to /database/items
+- dbAdd: 20 requests to /database/items
+- concurrent: 20 requests to /ping
+- load: 10s load test to /ping
+
+Sample Code Length: 149 characters
+Base URL: http://localhost:9229
+Timeout: 5000ms per request
+
+===============================================================================
+📊 DETAILED PERFORMANCE RESULTS
+===============================================================================
+
+📈 Ping Performance:
+   Requests:     100
+   Average:      1.04ms
+   Min:          0.00ms
+   Max:          3.00ms
+   Median (P50): 1.00ms
+   P95:          2.00ms
+   P99:          3.00ms
+   
+   Performance Rating: Very Good (< 5ms)
+   Consistency:        Very Good
+
+📈 Analyze Performance:
+   Requests:     50
+   Average:      1.06ms
+   Min:          0.00ms
+   Max:          2.00ms
+   Median (P50): 1.00ms
+   P95:          2.00ms
+   P99:          2.00ms
+   
+   Performance Rating: Very Good (< 5ms)
+   Consistency:        Very Good
+
+📈 Format Performance:
+   Requests:     50
+   Average:      1.04ms
+   Min:          0.00ms
+   Max:          2.00ms
+   Median (P50): 1.00ms
+   P95:          2.00ms
+   P99:          2.00ms
+   
+   Performance Rating: Very Good (< 5ms)
+   Consistency:        Very Good
+
+📈 DbList Performance:
+   Requests:     30
+   Average:      1.57ms
+   Min:          1.00ms
+   Max:          3.00ms
+   Median (P50): 1.00ms
+   P95:          3.00ms
+   P99:          3.00ms
+   
+   Performance Rating: Very Good (< 5ms)
+   Consistency:        Very Good
+
+📈 DbAdd Performance:
+   Requests:     20
+   Average:      1.30ms
+   Min:          1.00ms
+   Max:          3.00ms
+   Median (P50): 1.00ms
+   P95:          3.00ms
+   P99:          3.00ms
+   
+   Performance Rating: Very Good (< 5ms)
+   Consistency:        Very Good
+
+📈 Concurrent Performance:
+   Requests:     20
+   Average:      6.80ms
+   Min:          4.00ms
+   Max:          9.00ms
+   Median (P50): 7.00ms
+   P95:          9.00ms
+   P99:          9.00ms
+   
+   Performance Rating: Good (< 10ms)
+   Consistency:        Very Good
+
+📈 Load Performance:
+   Requests:     87451
+   Average:      0.11ms
+   Min:          0.00ms
+   Max:          4.00ms
+   Median (P50): 0.00ms
+   P95:          1.00ms
+   P99:          1.00ms
+   
+   Performance Rating: Excellent (< 1ms)
+   Consistency:        Very Good
+
+===============================================================================
+📈 PERFORMANCE ANALYSIS
+===============================================================================
+
+SPEED RANKINGS (by average response time):
+1. ping: 1.04ms
+2. format: 1.04ms
+3. analyze: 1.06ms
+4. dbAdd: 1.30ms
+5. dbList: 1.57ms
+6. concurrent: 6.80ms
+
+CONSISTENCY RANKINGS (by P95 - P50 variance):
+1. ping: 1.00ms variance
+2. analyze: 1.00ms variance
+3. format: 1.00ms variance
+4. dbList: 2.00ms variance
+5. dbAdd: 2.00ms variance
+6. concurrent: 2.00ms variance
+
+LOAD TEST ANALYSIS:
+- Total Requests: 87451
+- Duration: 10s
+- Throughput: 8745 requests/second
+- Average Response: 0.11ms
+- P95 Response: 1.00ms
+- Server Stability: Fair
+
+===============================================================================
+🎯 RECOMMENDATIONS
+===============================================================================
+
+PERFORMANCE OPTIMIZATION:
+✅ ping: Excellent performance (1.04ms avg)
+✅ analyze: Excellent performance (1.06ms avg)
+✅ format: Excellent performance (1.04ms avg)
+✅ dbList: Excellent performance (1.57ms avg)
+✅ dbAdd: Excellent performance (1.30ms avg)
+👍 concurrent: Good performance (6.80ms avg)
+✅ load: Excellent performance (0.11ms avg)
+
+SCALING CONSIDERATIONS:
+- Current throughput capacity: ~8745 req/sec
+- Recommended max load: 80% of capacity for safety margin
+- Consider horizontal scaling if sustained load > 1000 req/sec
+- Monitor memory usage during high concurrency
+
+MONITORING ALERTS:
+- Set P95 latency alert at 10ms for critical endpoints
+- Set throughput alert if drops below 500 req/sec
+- Monitor error rates > 1%
+- Set memory usage alert at 80% capacity
+
+===============================================================================
+🔍 TROUBLESHOOTING DATA
+===============================================================================
+
+TEST ERRORS: 0
+
+TEST WARNINGS: 0
+
+ENVIRONMENT VALIDATION:
+✅ Server connectivity: Verified
+✅ All endpoints responding: Yes
+✅ Database operations: Working
+✅ Concurrent handling: Tested
+✅ Load handling: Tested
+
+===============================================================================
+📋 SUMMARY
+===============================================================================
+
+OVERALL PERFORMANCE GRADE: A+ (Excellent)
+
+TOP PERFORMING ENDPOINTS:
+1. ping: 1.04ms
+2. format: 1.04ms
+3. analyze: 1.06ms
+
+AREAS FOR IMPROVEMENT:
+1. dbAdd: 1.30ms
+2. dbList: 1.57ms
+3. concurrent: 6.80ms
+
+PRODUCTION READINESS: ⚠️  NEEDS OPTIMIZATION (consistency)
+
+===============================================================================
+📞 SUPPORT INFORMATION
+===============================================================================
+
+For performance issues:
+1. Check system resources (CPU, Memory, Disk)
+2. Review error logs in application
+3. Monitor database performance
+4. Consider scaling options
+
+Report Location: /home/asplap1937/Documents/bundle-node/reports/performance_report_2025-06-04T05-56-15.txt
+JSON Data: /home/asplap1937/Documents/bundle-node/reports/performance_data_2025-06-04T05-56-15.json
+Summary: /home/asplap1937/Documents/bundle-node/reports/latest_summary.txt
+
+===============================================================================
+END OF REPORT
+===============================================================================
